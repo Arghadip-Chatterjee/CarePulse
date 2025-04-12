@@ -25,6 +25,13 @@ Carepulse is a modern, full-stack medical appointment management system built to
 - Success pages after actions (e.g., appointment creation)
 - Toast notifications (customizable with dynamic text) and SMS
 
+### 🛠️ Admin Panel
+- Full control over users (patients & doctors)
+- Manage appointments and resolve conflicts
+- Approve doctor registrations
+- Monitor platform activity and analytics
+- Secure authentication for Admin access
+
 ---
 
 ## 🛠 Tech Stack
