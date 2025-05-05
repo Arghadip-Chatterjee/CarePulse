@@ -41,7 +41,6 @@ export const PatientFormValidation = z.object({
       (emergencyContactNumber) => /^\+\d{10,15}$/.test(emergencyContactNumber),
       "Invalid phone number"
     ),
-  primaryPhysician: z.string().min(2, "Select at least one doctor"),
   insuranceProvider: z
     .string()
     .min(2, "Insurance name must be at least 2 characters")
@@ -89,6 +88,7 @@ export const CreateAppointmentSchema = z.object({
   appointmenttype: z.string(),
   prescription: z.array(z.string()),
   doctorId: z.string(),
+  meeting : z.string().optional(),
 });
 
 export const ScheduleAppointmentSchema = z.object({
@@ -100,6 +100,7 @@ export const ScheduleAppointmentSchema = z.object({
   appointmenttype: z.string(),
   prescription: z.array(z.string()),
   doctorId: z.string(),
+  meeting : z.string().optional(),
 });
 
 export const CancelAppointmentSchema = z.object({
@@ -114,6 +115,7 @@ export const CancelAppointmentSchema = z.object({
   appointmenttype: z.string(),
   prescription: z.array(z.string()),
   doctorId: z.string(),
+  meeting : z.string().optional(),
 });
 
 export const weekdays = [

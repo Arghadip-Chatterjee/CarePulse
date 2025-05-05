@@ -10,6 +10,21 @@ const DoctorRegister = async ({ params: { userId } }: SearchParamProps) => {
   const user = await getUser(userId);
   const patient = await getDoctor(userId);
 
+  // if (!patient) {
+  //   return (
+  //     <div className="flex h-screen items-center justify-center">
+  //       <div className="text-center">
+  //         <h1 className="text-3xl font-bold text-red-500 mb-4">
+  //           Unauthorized Access
+  //         </h1>
+  //         <p className="text-lg mb-6">
+  //           The doctor ID is invalid or not found in our database.
+  //         </p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
+
   if (patient) redirect(`/doctors/${userId}/console`);
 
   return (

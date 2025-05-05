@@ -13,6 +13,21 @@ const RequestSuccess = async ({
   const appointmentId = (searchParams?.appointmentId as string) || "";
   const appointment = await getAppointment(appointmentId);
 
+  if (!appointment) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-red-500 mb-4">
+            Unauthorized Access
+          </h1>
+          <p className="text-lg mb-6">
+            The Patient ID is invalid or not found in our database.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // const doctor = Doctors.find(
   //   (doctor) => doctor.name === appointment.primaryPhysician
   // );

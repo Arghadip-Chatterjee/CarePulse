@@ -1,24 +1,24 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import Image from "next/image";
+// import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Dispatch, SetStateAction, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import {
   SelectItem,
-  Select,
+  // Select,
   SelectContent,
-  SelectTrigger,
-  SelectValue,
+  // SelectTrigger,
+  // SelectValue,
 } from "@/components/ui/select";
 import {
   createAppointment,
   updateAppointment,
 } from "@/lib/actions/appointment.actions";
 import { getAppointmentSchema } from "@/lib/validation";
-import { Appointment, Doctor } from "@/types/appwrite.types";
+import { Appointment } from "@/types/appwrite.types";
 
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -59,6 +59,7 @@ export const AppointmentForm = ({
       appointmenttype: "online",
       doctorId: appointment?.doctorId || "",
       prescription: [],
+      meeting : "",
     },
   });
 
@@ -66,7 +67,7 @@ export const AppointmentForm = ({
     values: z.infer<typeof AppointmentFormValidation>
   ) => {
     setIsLoading(true);
-
+  
     let status;
     switch (type) {
       case "schedule":
@@ -78,24 +79,30 @@ export const AppointmentForm = ({
       default:
         status = "pending";
     }
-
+  
     try {
       if (type === "create" && patientId) {
-        const appointment = {
+        const doctorInfo = JSON.parse(values.doctor);
+
+        console.log("Doctor Info", doctorInfo);
+        const appointment: any = {
           userId,
           patient: patientId,
-          doctor: values.doctor,
+          doctor: doctorInfo.doctorName,
           schedule: new Date(values.schedule),
           reason: values.reason!,
           status: status as Status,
           note: values.note,
           appointmenttype: values.appointmenttype,
-          doctorId: values.doctorId,
+          doctorId: doctorInfo.doctorId,
           prescription: values.prescription,
+          meeting : "",
         };
-
+  
+        console.log("Appointment", appointment);
+  
         const newAppointment = await createAppointment(appointment);
-
+  
         if (newAppointment) {
           form.reset();
           router.push(
@@ -114,9 +121,9 @@ export const AppointmentForm = ({
           },
           type,
         };
-
+  
         const updatedAppointment = await updateAppointment(appointmentToUpdate);
-
+  
         if (updatedAppointment) {
           setOpen && setOpen(false);
           form.reset();
@@ -127,7 +134,6 @@ export const AppointmentForm = ({
     }
     setIsLoading(false);
   };
-
   let buttonLabel;
   switch (type) {
     case "cancel":
@@ -163,7 +169,13 @@ export const AppointmentForm = ({
             >
               <SelectContent className="shad-select-content">
                 {doctors.map((doctor: any) => (
-                  <SelectItem key={doctor.id} value={doctor.name}>
+                  <SelectItem
+                    key={doctor.id}
+                    value={JSON.stringify({
+                      doctorId: doctor.userId,
+                      doctorName: doctor.name,
+                    })}
+                  >
                     {doctor.name}
                   </SelectItem>
                 ))}
@@ -178,7 +190,6 @@ export const AppointmentForm = ({
               showTimeSelect
               dateFormat="MM/dd/yyyy  -  h:mm aa"
             />
-
             <div
               className={`flex flex-col gap-6  ${type === "create" && "xl:flex-row"}`}
             >
@@ -200,7 +211,6 @@ export const AppointmentForm = ({
                 disabled={type === "schedule"}
               />
             </div>
-
             <CustomFormField
               fieldType={FormFieldType.SELECT}
               control={form.control}

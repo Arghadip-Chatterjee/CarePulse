@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { FileUpload } from "@/components/ui/file-upload";
+// import { revalidatePath } from "next/cache";
 
 interface FileUploadDemoProps {
   userId: string;
@@ -26,6 +27,9 @@ export function FileUploadDemo({ userId }: FileUploadDemoProps) {
           body: formData,
         });
       }
+
+      alert("Files uploaded successfully!");
+      // revalidatePath(`/patients/${userId}/prescription`, "page"); // Ensure UI updates
 
       setIsUploading(false);
     }

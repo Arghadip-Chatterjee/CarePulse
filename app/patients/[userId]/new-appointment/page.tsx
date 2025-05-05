@@ -5,7 +5,7 @@ import { AppointmentForm } from "@/components/forms/AppointmentForm";
 import { getPatient } from "@/lib/actions/patient.actions";
 import { Button } from "@/components/ui/button";
 import {
-  getDoctorsList,
+  // getDoctorsList,
   getVerifiedDoctors,
 } from "@/lib/actions/doctor.actions";
 
@@ -13,6 +13,21 @@ const Appointment = async ({ params: { userId } }: SearchParamProps) => {
   const patient = await getPatient(userId);
   const doctorData = await getVerifiedDoctors();
   console.log(doctorData);
+
+  if (!patient) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-red-500 mb-4">
+            Unauthorized Access
+          </h1>
+          <p className="text-lg mb-6">
+            The patient ID is invalid or not found in our database.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen max-h-screen">

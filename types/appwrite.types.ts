@@ -11,7 +11,7 @@ export interface Patient extends Models.Document {
   occupation: string;
   emergencyContactName: string;
   emergencyContactNumber: string;
-  primaryPhysician: string;
+  // primaryPhysician: string;
   insuranceProvider: string;
   insurancePolicyNumber: string;
   allergies: string | undefined;
@@ -36,6 +36,7 @@ export interface Appointment extends Models.Document {
   appointmenttype: string;
   doctorId: string;
   prescription: String[];
+  meeting : string;
 }
 
 export enum Specialization {
@@ -67,6 +68,7 @@ export interface Doctor extends Models.Document {
 export interface Prescription extends Models.Document {
   prescription_url: string;
   fileId: string;
-  userId: string;
+  user_id: string;
   uploaded_at: Date;
+  appointmentId : string;
 }

@@ -5,6 +5,8 @@ import { ID, Query } from "node-appwrite";
 
 import { Appointment } from "@/types/appwrite.types";
 
+// import emailjs from "@emailjs/nodejs"; 
+
 import {
   APPOINTMENT_COLLECTION_ID,
   DATABASE_ID,
@@ -12,6 +14,9 @@ import {
   messaging,
 } from "../appwrite.config";
 import { formatDateTime, parseStringify } from "../utils";
+import nodemailer from 'nodemailer';
+// import { ZegoUIKitPrebuilt } from "@zegocloud/zego-uikit-prebuilt";
+
 
 //  CREATE APPOINTMENT
 export const createAppointment = async (
@@ -31,6 +36,18 @@ export const createAppointment = async (
     console.error("An error occurred while creating a new appointment:", error);
   }
 };
+
+const transporter = nodemailer.createTransport({
+  host: process.env.NEXT_PUBLIC_SMTP_HOST!, // e.g., 'smtp.gmail.com'
+  port: 587, // or 465 for secure
+  secure: false, // true for 465, false for other ports
+  auth: {
+    user: process.env.NEXT_PUBLIC_SMTP_USER!, // your email address
+    pass: process.env.NEXT_PUBLIC_SMTP_PASS!, // your email password or app-specific password
+  },
+  ignoreTLS : true,
+  service : 'Gmail',
+});
 
 //  GET RECENT APPOINTMENTS
 export const getRecentAppointmentList = async () => {
@@ -93,6 +110,23 @@ export const sendSMSNotification = async (userId: string, content: string) => {
     return parseStringify(message);
   } catch (error) {
     console.error("An error occurred while sending sms:", error);
+  }
+};
+
+export const sendEmail = async (templateParams: any) => {
+  try {
+    const mailOptions = {
+      from: 'arghadipchatterjee2016@gmail.com', // sender address
+      to: templateParams.to_email, // list of receivers
+      subject: templateParams.subject, // Subject line
+      text: templateParams.text, // plain text body
+      html: templateParams.html, // html body
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent successfully:', info.messageId);
+  } catch (error) {
+    console.error('An error occurred while sending email:', error);
   }
 };
 
@@ -198,12 +232,40 @@ export const getAppointmentbyDoctorId = async (doctorId: string) => {
     const response = await databases.listDocuments(
       DATABASE_ID!,
       APPOINTMENT_COLLECTION_ID!,
-      [Query.equal("doctor", [doctorId])],
+      [Query.equal("doctorId", [doctorId])]
     );
 
-    const appointments = response.documents as Appointment[];
-    return appointments.map((appointment) => appointment.patient);
+    const initialCounts = {
+      scheduledCount: 0,
+      pendingCount: 0,
+      cancelledCount: 0,
+    };
 
+    const counts = (response.documents as Appointment[]).reduce(
+      (acc, appointment) => {
+        switch (appointment.status) {
+          case "scheduled":
+            acc.scheduledCount++;
+            break;
+          case "pending":
+            acc.pendingCount++;
+            break;
+          case "cancelled":
+            acc.cancelledCount++;
+            break;
+        }
+        return acc;
+      },
+      initialCounts
+    );
+
+    const data = {
+      totalCount: response.total,
+      ...counts,
+      documents: response.documents,
+    };
+
+    return parseStringify(data);
   } catch (error) {
     console.error(
       "An error occurred while retrieving the existing patient:",
@@ -229,6 +291,28 @@ export const acceptAppointment = async (appointmentId: string) => {
   revalidatePath("/admin", "page");
   console.log("accept appointment", safeData);
 
+  // function randomID(len:number) {
+  //   let result = '';
+  //   if (result) return result;
+  //   var chars = '12345qwertyuiopasdfgh67890jklmnbvcxzMNBVCZXASDQWERTYHGFUIOLKJP',
+  //     maxPos = chars.length,
+  //     i;
+  //   len = len || 5;
+  //   for (i = 0; i < len; i++) {
+  //     result += chars.charAt(Math.floor(Math.random() * maxPos));
+  //   }
+  //   return result;
+  // }
+
+  // const appID = 1599881424 ;
+  // const serverSecret = "1ee186e068b30db4530a4c4367aabf0a";
+  // const roomID = `room-${appointmentId}`; 
+  // const kitToken =  ZegoUIKitPrebuilt.generateKitTokenForTest(appID, serverSecret, roomID,  randomID(5),  randomID(5));
+
+  // const zp = ZegoUIKitPrebuilt.create(kitToken);
+  // const meetingLink = `${window.location.protocol}//${window.location.host}/video?roomID=${roomID}`;
+
+
   return await databases.updateDocument(
     DATABASE_ID!,
     APPOINTMENT_COLLECTION_ID!,
@@ -236,6 +320,7 @@ export const acceptAppointment = async (appointmentId: string) => {
     {
       ...safeData,
       status: "scheduled",
+      // meeting:roomID,
     }
   );
 };
@@ -263,5 +348,29 @@ export const cancelAppointment = async (appointmentId: string) => {
     }
   );
 };
+
+export const meeting = async (appointmentId: string, meetingLink:string) => {
+
+  const existing = await databases.getDocument(
+    DATABASE_ID!,
+    APPOINTMENT_COLLECTION_ID!,
+    appointmentId
+  );
+  const safeData = sanitizeData(existing);
+  // revalidatePath("/admin", "page");
+  console.log("meeting appointment", safeData);
+  return await databases.updateDocument(
+    DATABASE_ID!,
+    APPOINTMENT_COLLECTION_ID!,
+    appointmentId,
+    {
+      ...safeData,
+      meeting : meetingLink,
+    }
+  );
+
+}
+
+
 
 

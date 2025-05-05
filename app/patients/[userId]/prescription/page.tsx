@@ -6,12 +6,28 @@ import { revalidatePath } from "next/cache";
 import { prescriptionColumns } from "@/components/table/columns";
 import { DataTable } from "@/components/table/DataTable";
 import { getPrescriptionListByUserId } from "@/lib/actions/prescription.action";
+import { Button } from "@/components/ui/button";
 
 const PrescriptionConsole = async ({
   params: { userId },
 }: SearchParamProps) => {
   const patient = await getPatient(userId);
   console.log(patient);
+
+  if (!patient) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-red-500 mb-4">
+            Unauthorized Access
+          </h1>
+          <p className="text-lg mb-6">
+            The Patient ID is invalid or not found in our database.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const prescriptions = await getPrescriptionListByUserId(userId);
 
@@ -30,6 +46,9 @@ const PrescriptionConsole = async ({
           />
         </Link>
         <div className="flex items-center gap-4 justify-center">
+          <Link href={`/patients/${userId}/console`}>
+            <Button className="">Patient Console</Button>
+          </Link>
           <p className="text-16-semibold">Prescription Dashboard</p>
         </div>
       </header>

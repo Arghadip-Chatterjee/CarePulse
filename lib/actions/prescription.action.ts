@@ -12,33 +12,40 @@ import {
 import { parseStringify } from "../utils";
 
 // Upload Prescription
-export async function uploadPrescription(fileBlob: Blob, fileName: string, userId: string) {
+export async function uploadPrescription(
+    fileBlob: Blob,
+    fileName: string,
+    userId: string,
+    appointmentId?: string // optional
+  ) {
     const inputFile = InputFile.fromBlob(fileBlob, fileName);
-
+  
     const response = await storage.createFile(
-        process.env.NEXT_PUBLIC_BUCKET_ID!,
-        ID.unique(),
-        inputFile
+      process.env.NEXT_PUBLIC_BUCKET_ID!,
+      ID.unique(),
+      inputFile
     );
-
-    const fileUrl = `${process.env.NEXT_PUBLIC_ENDPOINT}/storage/buckets/${process.env.NEXT_PUBLIC_BUCKET_ID}/files/${response.$id}/view?project=${PROJECT_ID}&mode=admin&permissions[read]=role:member`;
-
+  
+    const fileUrl = `${process.env.NEXT_PUBLIC_ENDPOINT}/storage/buckets/${process.env.NEXT_PUBLIC_BUCKET_ID}/files/${response.$id}/view?project=${PROJECT_ID}&mode=admin`;
+  
     await databases.createDocument(
-        process.env.NEXT_PUBLIC_DATABASE_ID!,
-        process.env.NEXT_PUBLIC_PRESCRIPTION_COLLECTION_ID!,
-        ID.unique(),
-        {
-            prescription_url: fileUrl,
-            fileId: response.$id,
-            user_id: userId,
-            uploaded_at: new Date().toISOString(),
-        }
+      process.env.NEXT_PUBLIC_DATABASE_ID!,
+      process.env.NEXT_PUBLIC_PRESCRIPTION_COLLECTION_ID!,
+      ID.unique(),
+      {
+        prescription_url: fileUrl,
+        fileId: response.$id,
+        user_id: userId,
+        uploaded_at: new Date().toISOString(),
+        appointmentId: appointmentId || null,
+      }
     );
-
+  
     revalidatePath(`/patients/${userId}/prescription`, 'page');
-
+  
     return fileUrl;
-}
+  }
+  
 
 // Fetch Prescriptions
 export const getPrescriptionListByUserId = async (userId: string) => {

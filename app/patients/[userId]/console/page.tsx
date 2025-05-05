@@ -7,12 +7,29 @@ import { getAppointmentListByUserId } from "@/lib/actions/appointment.actions";
 // import { Link } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { revalidatePath } from "next/cache";
 
 const PatientConsole = async ({ params: { userId } }: SearchParamProps) => {
   const patient = await getPatient(userId);
   console.log(patient);
   const appointments = await getAppointmentListByUserId(userId);
   console.log(appointments);
+  revalidatePath(`/patients/${userId}/console`);
+
+  if (!patient) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-red-500 mb-4">
+            Unauthorized Access
+          </h1>
+          <p className="text-lg mb-6">
+            The Patient ID is invalid or not found in our database.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto flex max-w-7xl flex-col space-y-14">
@@ -30,6 +47,10 @@ const PatientConsole = async ({ params: { userId } }: SearchParamProps) => {
         <div className="flex items-center gap-4 justify-center">
           <Link href={`/patients/${userId}/new-appointment`}>
             <Button className="">New Appointment</Button>
+          </Link>
+
+          <Link href={`/patients/${userId}/prescription`}>
+           <Button className="">Prescription Upload</Button>
           </Link>
 
           <p className="text-16-semibold">Patient Dashboard</p>

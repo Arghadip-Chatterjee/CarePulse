@@ -25,7 +25,7 @@ declare interface RegisterUserParams extends CreateUserParams {
   occupation: string;
   emergencyContactName: string;
   emergencyContactNumber: string;
-  primaryPhysician: string;
+  // primaryPhysician: string;
   insuranceProvider: string;
   insurancePolicyNumber: string;
   allergies: string | undefined;
@@ -49,6 +49,7 @@ declare type CreateAppointmentParams = {
   appointmenttype: string;
   doctorId: string;
   prescription: String[];
+  meeting : string;
 };
 
 declare type UpdateAppointmentParams = {
