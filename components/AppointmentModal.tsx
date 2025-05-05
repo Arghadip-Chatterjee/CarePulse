@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, startTransition } from "react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,13 +12,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Appointment } from "@/types/appwrite.types";
 import {
   acceptAppointment,
   cancelAppointment,
+  sendSMSNotification,
 } from "@/lib/actions/appointment.actions";
-import { sendSMSNotification } from "@/lib/actions/appointment.actions"; // Your SMS util
-import { toast } from "sonner";
+import { Appointment } from "@/types/appwrite.types";
+
+// import { sendSMSNotification } from "@/lib/actions/appointment.actions"; // Your SMS util
 
 export const AppointmentModal = ({
   patientId,

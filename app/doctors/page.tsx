@@ -1,5 +1,5 @@
-import { DoctorUserForm } from "@/components/forms/DoctorUser";
 import React from "react";
+import { DoctorUserForm } from "@/components/forms/DoctorUser";
 
 const DoctorPage = () => {
   return (

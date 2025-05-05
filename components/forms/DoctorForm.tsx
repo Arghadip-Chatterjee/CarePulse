@@ -4,15 +4,16 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { SelectItem } from "@/components/ui/select";
+import { Form,FormControl } from "@/components/ui/form";
 import { registerDoctor } from "@/lib/actions/doctor.actions";
 import { DoctorFormValidation } from "@/lib/validation";
 import { Specialization } from "@/types/appwrite.types";
-import { SelectItem } from "@/components/ui/select";
-import { Form, FormControl } from "@/components/ui/form";
+import CustomFormField,{ FormFieldType } from "../CustomFormField";
+
 import { FileUploader } from "../FileUploader";
 
 import "react-phone-number-input/style.css";
-import CustomFormField, { FormFieldType } from "../CustomFormField";
 import SubmitButton from "../SubmitButton";
 import "react-datepicker/dist/react-datepicker.css";
 import AvailableTimingsField from "../AvailableTimings";

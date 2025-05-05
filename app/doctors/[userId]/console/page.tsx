@@ -1,13 +1,13 @@
+import { revalidatePath } from "next/cache";
 import Image from "next/image";
-import { getDoctor } from "@/lib/actions/doctor.actions";
 import { StatCard } from "@/components/StatCard";
 import { columns1 } from "@/components/table/columns";
 import { DataTable } from "@/components/table/DataTable";
+import PrescriptionForm from "@/components/PrescriptionForm";
+import { getDoctor } from "@/lib/actions/doctor.actions";
 import { getAppointmentbyDoctorId } from "@/lib/actions/appointment.actions";
 import { getPrescriptionListByUserId } from "@/lib/actions/prescription.action";
 import Link from "next/link";
-import PrescriptionForm from "@/components/PrescriptionForm";
-import { revalidatePath } from "next/cache";
 
 const DoctorConsole = async ({ params: { userId } }: SearchParamProps) => {
   const doctor = await getDoctor(userId);

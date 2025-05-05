@@ -1,6 +1,6 @@
+import { revalidatePath } from "next/cache";
 import Image from "next/image";
 import Link from "next/link";
-
 import { StatCard } from "@/components/StatCard";
 import {
   columns as appointmentColumns,
@@ -8,8 +8,7 @@ import {
 } from "@/components/table/columns";
 import { DataTable } from "@/components/table/DataTable";
 import { getRecentAppointmentList } from "@/lib/actions/appointment.actions";
-import { getDoctorsList, verifyDoctor } from "@/lib/actions/doctor.actions";
-import { revalidatePath } from "next/cache";
+import { getDoctorsList } from "@/lib/actions/doctor.actions";
 
 const AdminPage = async () => {
   const appointments = await getRecentAppointmentList();

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest,NextResponse } from "next/server";
 import { uploadPrescription } from "@/lib/actions/prescription.action";
 
 export async function POST(req: NextRequest) {
