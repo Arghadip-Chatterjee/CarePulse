@@ -1,9 +1,10 @@
 "use server";
 
 import { ID, InputFile, Query } from "node-appwrite";
-
+import { CreateDoctorParams, RegisterDoctorParams } from "@/types/doctor.types";
+import { Doctor } from "@/types/appwrite.types";
 import {
-    BUCKET_ID,
+    NEXT_PUBLIC_BUCKET_ID,
     DATABASE_ID,
     ENDPOINT,
     DOCTOR_COLLECTION_ID,
@@ -13,8 +14,7 @@ import {
     users,
 } from "../appwrite.config";
 import { parseStringify } from "../utils";
-import { CreateDoctorParams, RegisterDoctorParams } from "@/types/doctor.types";
-import { Doctor } from "@/types/appwrite.types";
+
 
 // CREATE APPWRITE USER FOR DOCTOR
 export const createDoctor = async (doctor: CreateDoctorParams) => {
@@ -56,7 +56,7 @@ export const registerDoctor = async ({
                 identificationDocument.get("fileName") as string
             );
 
-            file = await storage.createFile(BUCKET_ID!, ID.unique(), inputFile);
+            file = await storage.createFile(NEXT_PUBLIC_BUCKET_ID!, ID.unique(), inputFile);
         }
 
         // Create a new doctor document in the database
@@ -68,7 +68,7 @@ export const registerDoctor = async ({
                 ...doctor,
                 identificationDocumentId: file?.$id || null,
                 identificationDocumentUrl: file?.$id
-                    ? `${ENDPOINT}/storage/buckets/${BUCKET_ID}/files/${file.$id}/view??project=${PROJECT_ID}`
+                    ? `${ENDPOINT}/storage/buckets/${NEXT_PUBLIC_BUCKET_ID}/files/${file.$id}/view??project=${PROJECT_ID}`
                     : null,
                 ...doctor,
             }
@@ -145,7 +145,7 @@ export const verifyDoctor = async (doctorId: string) => {
     }
 };
 
-//GET VERIFIED DOCTOR LIST
+// GET VERIFIED DOCTOR LIST
 export const getVerifiedDoctors = async () => {
     try {
         const doctors = await databases.listDocuments(

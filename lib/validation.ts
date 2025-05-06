@@ -1,5 +1,6 @@
-import { Specialization } from "@/types/appwrite.types";
 import { z } from "zod";
+
+import { Specialization } from "@/types/appwrite.types";
 
 export const UserFormValidation = z.object({
   name: z

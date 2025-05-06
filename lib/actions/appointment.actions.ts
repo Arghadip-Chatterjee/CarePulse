@@ -1,11 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+
 import { ID, Query } from "node-appwrite";
 
-import { Appointment } from "@/types/appwrite.types";
+import nodemailer from 'nodemailer';
 
-// import emailjs from "@emailjs/nodejs"; 
+import { Appointment } from "@/types/appwrite.types";
 
 import {
   APPOINTMENT_COLLECTION_ID,
@@ -13,10 +14,8 @@ import {
   databases,
   messaging,
 } from "../appwrite.config";
-import { formatDateTime, parseStringify } from "../utils";
-import nodemailer from 'nodemailer';
-// import { ZegoUIKitPrebuilt } from "@zegocloud/zego-uikit-prebuilt";
 
+import { formatDateTime, parseStringify } from "../utils";
 
 //  CREATE APPOINTMENT
 export const createAppointment = async (

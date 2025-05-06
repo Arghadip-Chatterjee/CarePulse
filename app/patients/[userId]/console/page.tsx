@@ -1,5 +1,7 @@
 import { revalidatePath } from "next/cache";
 import Image from "next/image";
+import Link from "next/link";
+
 import { StatCard } from "@/components/StatCard";
 import { columns1 } from "@/components/table/columns";
 import { DataTable } from "@/components/table/DataTable";
@@ -9,7 +11,6 @@ import { getAppointmentListByUserId } from "@/lib/actions/appointment.actions";
 import { getPatient } from "@/lib/actions/patient.actions";
 
 // import { Link } from "lucide-react";
-import Link from "next/link";
 
 const PatientConsole = async ({ params: { userId } }: SearchParamProps) => {
   const patient = await getPatient(userId);

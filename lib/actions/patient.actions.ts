@@ -3,7 +3,7 @@
 import { ID, InputFile, Query } from "node-appwrite";
 
 import {
-  BUCKET_ID,
+  NEXT_PUBLIC_BUCKET_ID,
   DATABASE_ID,
   ENDPOINT,
   PATIENT_COLLECTION_ID,
@@ -70,7 +70,7 @@ export const registerPatient = async ({
           identificationDocument?.get("fileName") as string
         );
 
-      file = await storage.createFile(BUCKET_ID!, ID.unique(), inputFile);
+      file = await storage.createFile(NEXT_PUBLIC_BUCKET_ID!, ID.unique(), inputFile);
     }
 
     // Create new patient document -> https://appwrite.io/docs/references/cloud/server-nodejs/databases#createDocument
@@ -81,7 +81,7 @@ export const registerPatient = async ({
       {
         identificationDocumentId: file?.$id ? file.$id : null,
         identificationDocumentUrl: file?.$id
-          ? `${ENDPOINT}/storage/buckets/${BUCKET_ID}/files/${file.$id}/view??project=${PROJECT_ID}`
+          ? `${ENDPOINT}/storage/buckets/${NEXT_PUBLIC_BUCKET_ID}/files/${file.$id}/view??project=${PROJECT_ID}`
           : null,
         ...patient,
       }

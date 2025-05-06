@@ -1,8 +1,10 @@
 "use client";
-import { useSearchParams } from "next/navigation";
 import { ZegoUIKitPrebuilt } from "@zegocloud/zego-uikit-prebuilt";
 
-import React, { useEffect, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
+
+import React,{ useEffect, useMemo } from "react";
+
 import { meeting } from "@/lib/actions/appointment.actions";
 
 const generateRandomID = (length: number): string => {

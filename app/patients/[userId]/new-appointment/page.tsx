@@ -3,11 +3,10 @@ import Link from "next/link";
 
 import { AppointmentForm } from "@/components/forms/AppointmentForm";
 import { Button } from "@/components/ui/button";
+
 import {
-  // getDoctorsList,
   getVerifiedDoctors,
 } from "@/lib/actions/doctor.actions";
-
 import { getPatient } from "@/lib/actions/patient.actions";
 
 

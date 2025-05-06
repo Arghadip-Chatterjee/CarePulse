@@ -1,36 +1,28 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-// import Image from "next/image";
+
 import Link from "next/link";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-
-// import { Doctors } from "@/constants";
-import { formatDateTime } from "@/lib/utils";
-import { Appointment, Doctor, Prescription } from "@/types/appwrite.types";
-
-// import { AppointmentModal } from "../AppointmentModal";
-import { StatusBadge } from "../StatusBadge";
-import { Button } from "../ui/button";
 import { useRouter } from "next/navigation";
 
-import { sendEmail } from "@/lib/actions/appointment.actions";
-// import { getPrescriptionListByUserId } from "@/lib/actions/prescription.action";
-// import { toast } from "react-hot-toast";
-// import ServerPrescriptionList from "@/components/ServerPrescriptionList";
+import { Tooltip,TooltipContent,TooltipProvider,TooltipTrigger } from "@/components/ui/tooltip";
 
 import {
   acceptAppointment,
   sendSMSNotification,
+  sendEmail,
+  cancelAppointment
 } from "@/lib/actions/appointment.actions";
-import { cancelAppointment } from "@/lib/actions/appointment.actions";
-
 import { verifyDoctor } from "@/lib/actions/doctor.actions";
-import { ToastSimple } from "@/components/Toast";
-import { Router } from "lucide-react";
-import { redirect } from "next/navigation";
-// import ClientPrescriptionList from "../ClientPrescriptionList";
-// import { revalidatePath } from "next/cache";
+
+
+import { formatDateTime } from "@/lib/utils";
+import { Appointment,Doctor,Prescription } from "@/types/appwrite.types";
+
+
+import { StatusBadge } from "../StatusBadge";
+import { Button } from "../ui/button";
+
 export const columns: ColumnDef<Appointment>[] = [
   {
     header: "#",

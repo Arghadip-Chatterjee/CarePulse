@@ -8,6 +8,8 @@
   ],
   "rules": {
     "no-undef": "off",
+    "react/no-unescaped-entities": "off",
+    "@typescript-eslint/no-unused-vars": "off",
     "import/order": [
       "error",
       {
