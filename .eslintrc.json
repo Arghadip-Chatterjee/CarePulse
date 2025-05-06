@@ -10,23 +10,5 @@
     "no-undef": "off",
     "react/no-unescaped-entities": "off",
     "@typescript-eslint/no-unused-vars": "off",
-    "import/order": [
-      "error",
-      {
-        "groups": [
-          "builtin",
-          "external",
-          "internal",
-          "parent",
-          "sibling",
-          "index"
-        ],
-        "newlines-between": "always",
-        "alphabetize": {
-          "order": "asc",
-          "caseInsensitive": true
-        }
-      }
-    ]
   }
 }
