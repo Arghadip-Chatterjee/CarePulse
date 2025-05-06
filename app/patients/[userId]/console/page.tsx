@@ -6,11 +6,8 @@ import { StatCard } from "@/components/StatCard";
 import { columns1 } from "@/components/table/columns";
 import { DataTable } from "@/components/table/DataTable";
 import { Button } from "@/components/ui/button";
-
 import { getAppointmentListByUserId } from "@/lib/actions/appointment.actions";
 import { getPatient } from "@/lib/actions/patient.actions";
-
-// import { Link } from "lucide-react";
 
 const PatientConsole = async ({ params: { userId } }: SearchParamProps) => {
   const patient = await getPatient(userId);

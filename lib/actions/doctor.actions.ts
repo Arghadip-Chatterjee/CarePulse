@@ -1,10 +1,10 @@
 "use server";
 
 import { ID, InputFile, Query } from "node-appwrite";
-import { CreateDoctorParams, RegisterDoctorParams } from "@/types/doctor.types";
 import { Doctor } from "@/types/appwrite.types";
+
+import { CreateDoctorParams, RegisterDoctorParams } from "@/types/doctor.types";
 import {
-    NEXT_PUBLIC_BUCKET_ID,
     DATABASE_ID,
     ENDPOINT,
     DOCTOR_COLLECTION_ID,
@@ -56,7 +56,7 @@ export const registerDoctor = async ({
                 identificationDocument.get("fileName") as string
             );
 
-            file = await storage.createFile(NEXT_PUBLIC_BUCKET_ID!, ID.unique(), inputFile);
+            file = await storage.createFile(process.env.NEXT_PUBLIC_BUCKET_ID!, ID.unique(), inputFile);
         }
 
         // Create a new doctor document in the database
@@ -68,7 +68,7 @@ export const registerDoctor = async ({
                 ...doctor,
                 identificationDocumentId: file?.$id || null,
                 identificationDocumentUrl: file?.$id
-                    ? `${ENDPOINT}/storage/buckets/${NEXT_PUBLIC_BUCKET_ID}/files/${file.$id}/view??project=${PROJECT_ID}`
+                    ? `${ENDPOINT}/storage/buckets/${process.env.NEXT_PUBLIC_BUCKET_ID}/files/${file.$id}/view??project=${PROJECT_ID}`
                     : null,
                 ...doctor,
             }
