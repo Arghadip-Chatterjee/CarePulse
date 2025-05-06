@@ -1,8 +1,10 @@
 # 🩺 CarePulse — Appointment Management System
 
-Carepulse is a modern, full-stack medical appointment management system built to streamline patient-doctor interactions. Patients can schedule, manage, and cancel appointments, while doctors can access and update schedules in real-time. Also, Prescription Storage is Available
+Carepulse is a modern, full-stack medical appointment management system built to streamline patient-doctor interactions. Patients can schedule, manage, and cancel appointments, while doctors can access and update schedules in real-time. Also, Prescription Storage is Available along with Online Meetings
 
 ---
+
+## LIVE LINK - https://care-pulse-two-bice.vercel.app/ 
 
 ## 🚀 Features
 
@@ -11,7 +13,8 @@ Carepulse is a modern, full-stack medical appointment management system built to
 - Select preferred time slots
 - View appointment history
 - Cancel appointments with reason
-- Receive real-time success notifications via toast, SMS
+- Receive real-time success notifications via toast, SMS, email
+- Schedule Online Meetings and Online Prescription will be given
 
 ### 🩻 For Doctors
 - View upcoming appointments
@@ -23,7 +26,7 @@ Carepulse is a modern, full-stack medical appointment management system built to
 - Reusable UI components (Buttons, Selects, Form Fields)
 - Responsive design with Tailwind CSS and Shadcn UI
 - Success pages after actions (e.g., appointment creation)
-- Toast notifications (customizable with dynamic text) and SMS
+- Toast notifications (customizable with dynamic text) and SMS and Email
 
 ### 🛠️ Admin Panel
 - Full control over users (patients & doctors)
