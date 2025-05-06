@@ -6,6 +6,10 @@ Carepulse is a modern, full-stack medical appointment management system built to
 
 ## LIVE LINK - https://care-pulse-two-bice.vercel.app/ 
 
+## The Basic Flowchart is Given Below :-
+![image](https://github.com/user-attachments/assets/6a2aa528-44d5-4bd6-b3b5-f09217ec41fa)
+
+
 ## 🚀 Features
 
 ### 👨‍⚕️ For Patients
