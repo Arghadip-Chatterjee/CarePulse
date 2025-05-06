@@ -1,8 +1,8 @@
 "use server";
 
 import { ID, InputFile, Query } from "node-appwrite";
-import { Doctor } from "@/types/appwrite.types";
 
+import { Doctor } from "@/types/appwrite.types";
 import { CreateDoctorParams, RegisterDoctorParams } from "@/types/doctor.types";
 import {
     DATABASE_ID,
