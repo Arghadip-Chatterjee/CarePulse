@@ -48,6 +48,7 @@ Carepulse is a modern, full-stack medical appointment management system built to
 | **Zod**       | Schema validation for forms        |
 | **React Hook Form** | Modern form management   |
 | **ShadCN/UI** | Beautiful, accessible UI components |
+| **Nodemailer** | For Sending Emails                 |
 | **Vercel**    | Deployment and hosting             |
 
 ---
