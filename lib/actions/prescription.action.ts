@@ -26,7 +26,7 @@ export async function uploadPrescription(
       inputFile
     );
   
-    const fileUrl = `${process.env.NEXT_PUBLIC_ENDPOINT}/storage/buckets/${process.env.NEXT_PUBLIC_BUCKET_ID}/files/${response.$id}/view?project=${PROJECT_ID}&mode=admin`;
+    const fileUrl = `${process.env.NEXT_PUBLIC_ENDPOINT}/storage/buckets/${process.env.NEXT_PUBLIC_BUCKET_ID}/files/${response.$id}/view?project=${PROJECT_ID}`;
   
     await databases.createDocument(
       process.env.NEXT_PUBLIC_DATABASE_ID!,
