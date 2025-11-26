@@ -49,7 +49,7 @@ declare type CreateAppointmentParams = {
   appointmenttype: string;
   doctorId: string;
   prescription: String[];
-  meeting : string;
+  meeting: string;
 };
 
 declare type UpdateAppointmentParams = {

@@ -1,0 +1,162 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum Gender {
+  Male
+  Female
+  Other
+}
+
+enum Status {
+  pending
+  scheduled
+  cancelled
+  verified
+  unverified
+}
+
+enum Specialization {
+  GeneralPractitioner
+  Cardiologist
+  Dermatologist
+  Neurologist
+  Orthopedist
+  Pediatrician
+  Psychiatrist
+  Gynecologist
+  Ophthalmologist
+  Other
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String   @unique
+  phone     String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  patient     Patient?
+  doctor      Doctor?
+  appointments Appointment[]
+  prescriptions Prescription[]
+
+  @@map("users")
+}
+
+model Patient {
+  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId                    String    @unique @db.ObjectId
+  user                      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  birthDate                 DateTime
+  gender                    Gender
+  address                   String
+  occupation                String
+  emergencyContactName      String
+  emergencyContactNumber    String
+  insuranceProvider         String?
+  insurancePolicyNumber     String?
+  allergies                 String?
+  currentMedication         String?
+  familyMedicalHistory      String?
+  pastMedicalHistory        String?
+  identificationType        String?
+  identificationNumber      String?
+  identificationDocumentId  String?
+  identificationDocumentUrl String?
+  privacyConsent            Boolean   @default(false)
+  
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  // Relations
+  appointments              Appointment[]
+
+  @@map("patients")
+}
+
+model Doctor {
+  id                        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId                    String    @unique @db.ObjectId
+  user                      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  specialization            Specialization
+  licenseNumber             String    @unique
+  yearsOfExperience         String
+  hospitalAffiliation       String
+  identificationType        String?
+  identificationNumber      String?
+  identificationDocumentId  String?
+  identificationDocumentUrl String?
+  consultationFee           String
+  availableTimingsOnline    String[]
+  availableTimingsOffline   String[]
+  isVerified                Boolean   @default(false)
+  
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  // Relations
+  appointments              Appointment[]
+
+  @@map("doctors")
+}
+
+model Appointment {
+  id                String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String    @db.ObjectId
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  patientId         String    @db.ObjectId
+  patient           Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  
+  doctorId          String    @db.ObjectId
+  doctor            Doctor    @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  
+  doctorName        String    // Denormalized for easier queries
+  schedule          DateTime
+  status            Status    @default(pending)
+  reason            String
+  note              String?
+  cancellationReason String?
+  appointmentType   String    @default("online")
+  meeting           String?   @default("")
+  prescription      String[]  @default([])
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  prescriptions     Prescription[]
+
+  @@map("appointments")
+}
+
+model Prescription {
+  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String      @db.ObjectId
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  appointmentId String?     @db.ObjectId
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  
+  prescriptionUrl String
+  fileId         String
+  uploadedAt     DateTime    @default(now())
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("prescriptions")
+}

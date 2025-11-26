@@ -50,6 +50,8 @@ export const AppointmentForm = ({
 }) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submissionId, setSubmissionId] = useState<string | null>(null);
 
   const AppointmentFormValidation = getAppointmentSchema(type);
 
@@ -73,7 +75,17 @@ export const AppointmentForm = ({
   const onSubmit = async (
     values: z.infer<typeof AppointmentFormValidation>
   ) => {
+    // Prevent double submission
+    if (isLoading || isSubmitted) {
+      console.log("Form is already submitting or submitted, ignoring duplicate submission");
+      return;
+    }
+
+    const currentSubmissionId = `sub_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    setSubmissionId(currentSubmissionId);
     setIsLoading(true);
+    setIsSubmitted(true);
+    console.log("🚀 Starting appointment creation with submission ID:", currentSubmissionId);
   
     let status;
     switch (type) {
@@ -104,17 +116,22 @@ export const AppointmentForm = ({
           doctorId: doctorInfo.doctorId,
           prescription: values.prescription,
           meeting : "",
+          // Note: submissionId will be logged but not stored in DB until schema is updated
         };
   
-        console.log("Appointment", appointment);
+        console.log("Appointment data being sent:", appointment);
+        console.log("Submission ID:", currentSubmissionId);
   
-        const newAppointment = await createAppointment(appointment);
+        const newAppointment = await createAppointment(appointment, currentSubmissionId);
+        console.log("✅ Appointment created successfully:", newAppointment);
   
         if (newAppointment) {
           form.reset();
           router.push(
             `/patients/${userId}/new-appointment/success?appointmentId=${newAppointment.$id}`
           );
+        } else {
+          alert("Failed to create appointment. Please try again.");
         }
       } else {
         const appointmentToUpdate = {
@@ -136,10 +153,24 @@ export const AppointmentForm = ({
           form.reset();
         }
       }
-    } catch (error) {
-      console.log(error);
+    } catch (error: any) {
+      console.error("❌ Appointment creation failed:", error);
+      
+      // Provide more specific error messages
+      if (error?.message?.includes("already exists")) {
+        alert(error.message);
+      } else if (error?.code === 409) {
+        alert("An appointment with these details already exists. Please check the date, time, doctor, or patient selection.");
+      } else if (error?.message?.includes("Document with the requested ID already exists")) {
+        alert("There was a conflict creating the appointment. Please try again.");
+      } else {
+        alert("An error occurred while creating the appointment. Please try again.");
+      }
+    } finally {
+      // Always reset loading state
+      setIsLoading(false);
+      console.log("🔄 Form submission completed, loading state reset");
     }
-    setIsLoading(false);
   };
   let buttonLabel;
   switch (type) {

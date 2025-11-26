@@ -11,7 +11,6 @@ import {columns as appointmentColumns,doctorColumns} from "@/components/table/co
 import { DataTable } from "@/components/table/DataTable";
 
 import { getRecentAppointmentList } from "@/lib/actions/appointment.actions";
-
 import { getDoctorsList } from "@/lib/actions/doctor.actions";
 
 const AdminPage = async () => {
@@ -19,6 +18,22 @@ const AdminPage = async () => {
   const doctors = await getDoctorsList();
 
   revalidatePath("/admin", "page");
+
+  // Handle cases where data might be undefined
+  const safeAppointments = appointments || {
+    totalCount: 0,
+    scheduledCount: 0,
+    pendingCount: 0,
+    cancelledCount: 0,
+    documents: [],
+  };
+
+  const safeDoctors = doctors || {
+    totalCount: 0,
+    verifiedCount: 0,
+    unverifiedCount: 0,
+    documents: [],
+  };
 
   return (
     <div className="mx-auto flex max-w-7xl flex-col space-y-14">
@@ -49,19 +64,19 @@ const AdminPage = async () => {
           {/* Appointments Stats */}
           <StatCard
             type="appointments"
-            count={appointments.scheduledCount}
+            count={safeAppointments.scheduledCount}
             label="Scheduled appointments"
             icon="/assets/icons/appointments.svg"
           />
           <StatCard
             type="pending"
-            count={appointments.pendingCount}
+            count={safeAppointments.pendingCount}
             label="Pending appointments"
             icon="/assets/icons/pending.svg"
           />
           <StatCard
             type="cancelled"
-            count={appointments.cancelledCount}
+            count={safeAppointments.cancelledCount}
             label="Cancelled appointments"
             icon="/assets/icons/cancelled.svg"
           />
@@ -69,31 +84,31 @@ const AdminPage = async () => {
           {/* Doctors Stats */}
           <StatCard
             type="doctors"
-            count={doctors.totalCount}
+            count={safeDoctors.totalCount}
             label="Total Doctors"
             icon="/assets/icons/doctors.svg"
           />
           <StatCard
             type="verified"
-            count={doctors.verifiedCount}
+            count={safeDoctors.verifiedCount}
             label="Verified Doctors"
             icon="/assets/icons/verified.svg"
           />
           <StatCard
             type="unverified"
-            count={doctors.unverifiedCount}
+            count={safeDoctors.unverifiedCount}
             label="Pending Verification"
             icon="/assets/icons/pending.svg"
           />
         </section>
 
         {/* Appointments Table */}
-        <DataTable columns={appointmentColumns} data={appointments.documents} />
+        <DataTable columns={appointmentColumns} data={safeAppointments.documents} />
 
         {/* Doctors Table */}
         <section className="admin-doctors w-full">
           <h2 className="text-xl font-semibold mb-4">Doctors Verification</h2>
-          <DataTable columns={doctorColumns} data={doctors.documents} />
+          <DataTable columns={doctorColumns} data={safeDoctors.documents} />
         </section>
       </main>
     </div>

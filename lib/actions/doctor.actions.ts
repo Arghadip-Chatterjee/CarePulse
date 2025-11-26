@@ -62,6 +62,7 @@ export const registerDoctor = async ({
         // Create a new doctor document in the database
         const newDoctor = await databases.createDocument(
             DATABASE_ID!,
+            // DOCTOR_COLLECTION_ID!,
             DOCTOR_COLLECTION_ID!,
             ID.unique(),
             {
@@ -85,6 +86,7 @@ export const getDoctor = async (userId: string) => {
     try {
         const doctors = await databases.listDocuments(
             DATABASE_ID!,
+            // DOCTOR_COLLECTION_ID!,
             DOCTOR_COLLECTION_ID!,
             [Query.equal("userId", [userId])]
         );
@@ -99,6 +101,7 @@ export const getDoctorsList = async () => {
     try {
         const doctors = await databases.listDocuments(
             DATABASE_ID!,
+            // DOCTOR_COLLECTION_ID!,
             DOCTOR_COLLECTION_ID!,
             [Query.orderDesc("$createdAt")]
         );
@@ -126,12 +129,20 @@ export const getDoctorsList = async () => {
         return parseStringify(data);
     } catch (error) {
         console.error("An error occurred while retrieving the doctors list:", error);
+        // Return default data structure to prevent admin page from breaking
+        return {
+            totalCount: 0,
+            verifiedCount: 0,
+            unverifiedCount: 0,
+            documents: [],
+        };
     }
 };
 
 export const verifyDoctor = async (doctorId: string) => {
     try {
-        await databases.updateDocument(DATABASE_ID!, DOCTOR_COLLECTION_ID!, doctorId, {
+        await databases.updateDocument(DATABASE_ID!, // DOCTOR_COLLECTION_ID!,
+            DOCTOR_COLLECTION_ID!, doctorId, {
             isVerified: true,
         });
         console.log("Doctor Verified Successfully!");
@@ -150,6 +161,7 @@ export const getVerifiedDoctors = async () => {
     try {
         const doctors = await databases.listDocuments(
             DATABASE_ID!,
+            // DOCTOR_COLLECTION_ID!,
             DOCTOR_COLLECTION_ID!,
             [Query.equal("isVerified", [true])]
         );
