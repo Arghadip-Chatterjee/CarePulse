@@ -14,7 +14,7 @@ import { getPrescriptionListByUserId } from "@/lib/actions/prescription.action";
 
 const DoctorConsole = async ({ params: { userId } }: SearchParamProps) => {
   const doctor = await getDoctor(userId);
-  const appointments = await getAppointmentbyDoctorId(userId);
+
   revalidatePath(`/doctors/${userId}/console`);
 
   if (!doctor) {
@@ -32,6 +32,8 @@ const DoctorConsole = async ({ params: { userId } }: SearchParamProps) => {
     );
   }
 
+  const appointments = await getAppointmentbyDoctorId(doctor.id);
+
   // Fetch prescriptions for each appointment
   const prescriptionsList = await Promise.all(
     appointments.documents.map(async (appointment: any) => {
@@ -39,8 +41,8 @@ const DoctorConsole = async ({ params: { userId } }: SearchParamProps) => {
         appointment.userId
       );
       return {
-        appointmentId: appointment.$id,
-        prescriptions: prescriptions.documents,
+        appointmentId: appointment.id,
+        prescriptions: prescriptions || [],
         appointmentName: appointment.patient.name,
       };
     })
@@ -93,7 +95,7 @@ const DoctorConsole = async ({ params: { userId } }: SearchParamProps) => {
           />
         </section>
 
-        <DataTable columns={columns1} data={appointments.documents} />
+        <DataTable columns={columns1} data={appointments.documents} isDoctor={true} />
 
         {/* Inside DoctorConsole component */}
         <PrescriptionForm
@@ -130,7 +132,7 @@ const DoctorConsole = async ({ params: { userId } }: SearchParamProps) => {
                     </td>
                     <td className="py-2 px-4 border-b border border-white">
                       {prescriptions.map((prescription: any, index: number) => (
-                        <div key={prescription.fileId}>
+                        <div key={prescription.id}>
                           <Link
                             href={prescription.prescription_url}
                             target="_blank"

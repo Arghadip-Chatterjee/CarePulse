@@ -10,7 +10,7 @@ import { getPatient } from "@/lib/actions/patient.actions";
 const Appointment = async ({ params: { userId } }: SearchParamProps) => {
   const patient = await getPatient(userId);
   const doctorData = await getVerifiedDoctors();
-  console.log(doctorData);
+
 
   if (!patient) {
     return (
@@ -40,10 +40,10 @@ const Appointment = async ({ params: { userId } }: SearchParamProps) => {
           />
 
           <AppointmentForm
-            patientId={patient?.$id}
+            patientId={patient?.id}
             userId={userId}
             type="create"
-            doctors={doctorData?.documents || []}
+            doctors={doctorData || []}
           />
 
           <Link href={`/patients/${userId}/console`}>

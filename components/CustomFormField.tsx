@@ -40,6 +40,9 @@ interface CustomProps {
   children?: React.ReactNode;
   renderSkeleton?: (field: any) => React.ReactNode;
   fieldType: FormFieldType;
+  filterDate?: (date: Date) => boolean;
+  filterTime?: (time: Date) => boolean;
+  onDateChange?: (date: Date) => void;
 }
 
 const RenderInput = ({ field, props }: { field: any; props: CustomProps }) => {
@@ -119,10 +122,18 @@ const RenderInput = ({ field, props }: { field: any; props: CustomProps }) => {
             <ReactDatePicker
               showTimeSelect={props.showTimeSelect ?? false}
               selected={field.value}
-              onChange={(date: Date) => field.onChange(date)}
+              onChange={(date: Date) => {
+                if (props.onDateChange) {
+                  props.onDateChange(date);
+                } else {
+                  field.onChange(date);
+                }
+              }}
               timeInputLabel="Time:"
               dateFormat={props.dateFormat ?? "MM/dd/yyyy"}
               wrapperClassName="date-picker"
+              filterDate={props.filterDate}
+              filterTime={props.filterTime}
             />
           </FormControl>
         </div>

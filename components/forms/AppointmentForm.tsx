@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 // import Image from "next/image";
 import { useRouter } from "next/navigation";
 
-import { Dispatch,SetStateAction,useState } from "react";
+import { Dispatch,SetStateAction,useState,useMemo,useEffect } from "react";
 
 import { useForm } from "react-hook-form";
 
@@ -52,6 +52,7 @@ export const AppointmentForm = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submissionId, setSubmissionId] = useState<string | null>(null);
+  const [selectedDoctor, setSelectedDoctor] = useState<any>(null);
 
   const AppointmentFormValidation = getAppointmentSchema(type);
 
@@ -71,6 +72,107 @@ export const AppointmentForm = ({
       meeting : "",
     },
   });
+
+  // Watch for doctor and appointment type changes
+  const watchedDoctor = form.watch("doctor");
+  const watchedAppointmentType = form.watch("appointmenttype");
+
+  // Update selected doctor when doctor field changes
+  useEffect(() => {
+    if (watchedDoctor) {
+      try {
+        const doctorInfo = JSON.parse(watchedDoctor);
+        const doctor = doctors.find((d: any) => d.id === doctorInfo.doctorId);
+        setSelectedDoctor(doctor);
+      } catch (error) {
+        setSelectedDoctor(null);
+      }
+    } else {
+      setSelectedDoctor(null);
+    }
+  }, [watchedDoctor, doctors]);
+
+  // Get available timings based on appointment type
+  const availableTimings = useMemo(() => {
+    if (!selectedDoctor) return [];
+    
+    const timings = watchedAppointmentType === "online" 
+      ? selectedDoctor.availableTimingsOnline 
+      : selectedDoctor.availableTimingsOffline;
+    
+    return timings || [];
+  }, [selectedDoctor, watchedAppointmentType]);
+
+  // Parse timing string (e.g., "Monday: 10:00 AM") into day and time
+  const parseTimingString = (timing: string) => {
+    const parts = timing.split(":");
+    if (parts.length < 2) return { day: "", time: "" };
+    
+    const day = parts[0].trim();
+    const time = parts.slice(1).join(":").trim();
+    return { day, time };
+  };
+
+  // Get available time for a specific day
+  const getTimeForDay = (dayName: string) => {
+    const timing = availableTimings.find((t: string) => {
+      const { day } = parseTimingString(t);
+      return day === dayName;
+    });
+    
+    if (timing) {
+      const { time } = parseTimingString(timing);
+      return time;
+    }
+    return null;
+  };
+
+  // Filter dates - only allow days that match available timings
+  const filterDate = (date: Date) => {
+    if (availableTimings.length === 0) return true;
+    
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+    return availableTimings.some((timing: string) => {
+      const { day } = parseTimingString(timing);
+      return day === dayName;
+    });
+  };
+
+  // Handle date selection - automatically set time based on doctor's availability
+  const handleDateChange = (date: Date) => {
+    if (!date) {
+      form.setValue("schedule", date);
+      return;
+    }
+
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+    const availableTime = getTimeForDay(dayName);
+    
+    if (availableTime) {
+      // Parse the time string (e.g., "10:00 AM") and set it on the date
+      const timeParts = availableTime.match(/(\d+):(\d+)\s*(AM|PM)/i);
+      if (timeParts) {
+        let hours = parseInt(timeParts[1]);
+        const minutes = parseInt(timeParts[2]);
+        const meridiem = timeParts[3].toUpperCase();
+        
+        // Convert to 24-hour format
+        if (meridiem === "PM" && hours !== 12) {
+          hours += 12;
+        } else if (meridiem === "AM" && hours === 12) {
+          hours = 0;
+        }
+        
+        const newDate = new Date(date);
+        newDate.setHours(hours, minutes, 0, 0);
+        form.setValue("schedule", newDate);
+      } else {
+        form.setValue("schedule", date);
+      }
+    } else {
+      form.setValue("schedule", date);
+    }
+  };
 
   const onSubmit = async (
     values: z.infer<typeof AppointmentFormValidation>
@@ -128,7 +230,7 @@ export const AppointmentForm = ({
         if (newAppointment) {
           form.reset();
           router.push(
-            `/patients/${userId}/new-appointment/success?appointmentId=${newAppointment.$id}`
+            `/patients/${userId}/new-appointment/success?appointmentId=${newAppointment.id}`
           );
         } else {
           alert("Failed to create appointment. Please try again.");
@@ -136,7 +238,7 @@ export const AppointmentForm = ({
       } else {
         const appointmentToUpdate = {
           userId,
-          appointmentId: appointment?.$id!,
+          appointmentId: appointment?.id!,
           appointment: {
             primaryPhysician: values.doctor,
             schedule: new Date(values.schedule),
@@ -210,7 +312,7 @@ export const AppointmentForm = ({
                   <SelectItem
                     key={doctor.id}
                     value={JSON.stringify({
-                      doctorId: doctor.userId,
+                      doctorId: doctor.id,
                       doctorName: doctor.name,
                     })}
                   >
@@ -220,13 +322,37 @@ export const AppointmentForm = ({
               </SelectContent>
             </CustomFormField>
 
+            {/* Display Doctor's Available Timings */}
+            {selectedDoctor && availableTimings.length > 0 && (
+              <div className="bg-dark-400 border border-dark-500 rounded-lg p-4 mt-4">
+                <h3 className="text-16-semibold mb-3 text-white">
+                  Available Timings ({watchedAppointmentType === "online" ? "Online" : "Offline"})
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {availableTimings.map((timing: string, index: number) => (
+                    <div
+                      key={index}
+                      className="bg-dark-300 px-3 py-2 rounded-md text-14-regular text-green-500"
+                    >
+                      {timing}
+                    </div>
+                  ))}
+                </div>
+                <p className="text-12-regular text-dark-700 mt-3">
+                  Please select a date and time that matches the available slots above.
+                </p>
+              </div>
+            )}
+
             <CustomFormField
               fieldType={FormFieldType.DATE_PICKER}
               control={form.control}
               name="schedule"
               label="Expected appointment date"
-              showTimeSelect
-              dateFormat="MM/dd/yyyy  -  h:mm aa"
+              showTimeSelect={false}
+              dateFormat="MM/dd/yyyy"
+              filterDate={filterDate}
+              onDateChange={handleDateChange}
             />
             <div
               className={`flex flex-col gap-6  ${type === "create" && "xl:flex-row"}`}

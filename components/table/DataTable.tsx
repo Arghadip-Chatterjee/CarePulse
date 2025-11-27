@@ -8,7 +8,6 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import Image from "next/image";
-import { redirect } from "next/navigation";
 import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -21,34 +20,47 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { decryptKey } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  isAdmin?: boolean;
+  isDoctor?: boolean;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+  isAdmin = false,
+  isDoctor = false,
 }: DataTableProps<TData, TValue>) {
+  const router = useRouter();
   const encryptedKey =
     typeof window !== "undefined"
       ? window.localStorage.getItem("accessKey")
       : null;
 
   useEffect(() => {
+    if (!isAdmin) return;
+
     const accessKey = encryptedKey && decryptKey(encryptedKey);
 
     if (accessKey !== process.env.NEXT_PUBLIC_ADMIN_PASSKEY!.toString()) {
-      redirect("/");
+      router.push("/");
     }
-  }, [encryptedKey]);
+  }, [encryptedKey, router, isAdmin]);
 
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    initialState: {
+      columnVisibility: {
+        hasVisited: isDoctor,
+      },
+    },
   });
 
   return (
@@ -73,7 +85,7 @@ export function DataTable<TData, TValue>({
           ))}
         </TableHeader>
         <TableBody>
-          {table.getRowModel().rows?.length ? (
+          {table.getRowModel().rows && table.getRowModel().rows.length > 0 ? (
             table.getRowModel().rows.map((row) => (
               <TableRow
                 key={row.id}

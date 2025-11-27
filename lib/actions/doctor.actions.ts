@@ -4,44 +4,43 @@ import { ID, InputFile, Query } from "node-appwrite";
 
 import { Doctor } from "@/types/appwrite.types";
 import { CreateDoctorParams, RegisterDoctorParams } from "@/types/doctor.types";
-import {
-    DATABASE_ID,
-    ENDPOINT,
-    DOCTOR_COLLECTION_ID,
-    PROJECT_ID,
-    databases,
-    storage,
-    users,
-} from "../appwrite.config";
 import { parseStringify } from "../utils";
+import prisma from "@/lib/prisma";
+import { signUp } from "./auth.actions";
+import { uploadFile, fileToBase64 } from "./storage.actions";
 
 
 // CREATE APPWRITE USER FOR DOCTOR
+// CREATE DOCTOR USER
 export const createDoctor = async (doctor: CreateDoctorParams) => {
     try {
+        // Check if user already exists to avoid throwing error
+        const existingUser = await prisma.user.findUnique({
+            where: { email: doctor.email },
+            include: { doctor: true },
+        });
+
+        if (existingUser) {
+            return parseStringify(existingUser);
+        }
+
         // Create a new doctor user
-        const newDoctor = await users.create(
-            ID.unique(),
-            doctor.email,
-            doctor.phone,
-            undefined,
-            doctor.name
-        );
+        const newDoctor = await signUp({
+            name: doctor.name,
+            email: doctor.email,
+            phone: doctor.phone,
+            password: doctor.phone, // Using phone as default password
+            role: "doctor",
+        });
 
         return parseStringify(newDoctor);
     } catch (error: any) {
-        // Check if the user already exists
-        if (error?.code === 409) {
-            const existingDoctor = await users.list([
-                Query.equal("email", [doctor.email]),
-            ]);
-
-            return existingDoctor.users[0];
-        }
         console.error("An error occurred while creating a new doctor:", error);
+        throw error;
     }
 };
 
+// REGISTER DOCTOR
 // REGISTER DOCTOR
 export const registerDoctor = async ({
     identificationDocument,
@@ -49,49 +48,56 @@ export const registerDoctor = async ({
 }: RegisterDoctorParams) => {
     try {
         // Upload identification document if available
-        let file;
-        if (identificationDocument) {
-            const inputFile = InputFile.fromBlob(
-                identificationDocument.get("blobFile") as Blob,
-                identificationDocument.get("fileName") as string
-            );
+        let fileId: string | null = null;
+        let fileUrl: string | null = null;
 
-            file = await storage.createFile(process.env.NEXT_PUBLIC_BUCKET_ID!, ID.unique(), inputFile);
+        if (identificationDocument) {
+            const blob = identificationDocument.get("blobFile") as Blob;
+            if (blob) {
+                const base64 = await fileToBase64(blob);
+                const uploadResult = await uploadFile(base64, "doctor-documents");
+                fileId = uploadResult.publicId;
+                fileUrl = uploadResult.url;
+            }
         }
 
+        // Extract userId from doctor data
+        const userId = (doctor as any).userId;
+        
+        if (!userId) {
+            throw new Error("userId is required to register a doctor. Make sure the user is created first.");
+        }
+
+        // Remove userId from doctor data to avoid conflicts
+        const { userId: _, ...doctorData } = doctor as any;
+
         // Create a new doctor document in the database
-        const newDoctor = await databases.createDocument(
-            DATABASE_ID!,
-            // DOCTOR_COLLECTION_ID!,
-            DOCTOR_COLLECTION_ID!,
-            ID.unique(),
-            {
-                ...doctor,
-                identificationDocumentId: file?.$id || null,
-                identificationDocumentUrl: file?.$id
-                    ? `${ENDPOINT}/storage/buckets/${process.env.NEXT_PUBLIC_BUCKET_ID}/files/${file.$id}/view??project=${PROJECT_ID}`
-                    : null,
-                ...doctor,
-            }
-        );
+        const newDoctor = await prisma.doctor.create({
+            data: {
+                ...doctorData,
+                identificationDocumentId: fileId,
+                identificationDocumentUrl: fileUrl,
+                user: {
+                    connect: { id: userId }
+                }
+            },
+        });
 
         return parseStringify(newDoctor);
     } catch (error) {
         console.error("An error occurred while registering a doctor:", error);
+        throw error;
     }
 };
 
 // GET DOCTOR
 export const getDoctor = async (userId: string) => {
     try {
-        const doctors = await databases.listDocuments(
-            DATABASE_ID!,
-            // DOCTOR_COLLECTION_ID!,
-            DOCTOR_COLLECTION_ID!,
-            [Query.equal("userId", [userId])]
-        );
+        const doctor = await prisma.doctor.findFirst({
+            where: { userId },
+        });
 
-        return parseStringify(doctors.documents[0]);
+        return parseStringify(doctor);
     } catch (error) {
         console.error("An error occurred while retrieving the doctor details:", error);
     }
@@ -99,19 +105,16 @@ export const getDoctor = async (userId: string) => {
 
 export const getDoctorsList = async () => {
     try {
-        const doctors = await databases.listDocuments(
-            DATABASE_ID!,
-            // DOCTOR_COLLECTION_ID!,
-            DOCTOR_COLLECTION_ID!,
-            [Query.orderDesc("$createdAt")]
-        );
+        const doctors = await prisma.doctor.findMany({
+            orderBy: { createdAt: "desc" },
+        });
 
         const initialCounts = {
             verifiedCount: 0,
             unverifiedCount: 0,
         };
 
-        const counts = (doctors.documents as Doctor[]).reduce((acc, doctor) => {
+        const counts = (doctors as any[]).reduce((acc, doctor) => {
             if (doctor.isVerified) {
                 acc.verifiedCount++;
             } else {
@@ -121,9 +124,9 @@ export const getDoctorsList = async () => {
         }, initialCounts);
 
         const data = {
-            totalCount: doctors.total,
+            totalCount: doctors.length,
             ...counts,
-            documents: doctors.documents,
+            documents: doctors,
         };
 
         return parseStringify(data);
@@ -141,9 +144,11 @@ export const getDoctorsList = async () => {
 
 export const verifyDoctor = async (doctorId: string) => {
     try {
-        await databases.updateDocument(DATABASE_ID!, // DOCTOR_COLLECTION_ID!,
-            DOCTOR_COLLECTION_ID!, doctorId, {
-            isVerified: true,
+        await prisma.doctor.update({
+            where: { id: doctorId },
+            data: {
+                isVerified: true,
+            },
         });
         console.log("Doctor Verified Successfully!");
         return true;
@@ -159,14 +164,11 @@ export const verifyDoctor = async (doctorId: string) => {
 // GET VERIFIED DOCTOR LIST
 export const getVerifiedDoctors = async () => {
     try {
-        const doctors = await databases.listDocuments(
-            DATABASE_ID!,
-            // DOCTOR_COLLECTION_ID!,
-            DOCTOR_COLLECTION_ID!,
-            [Query.equal("isVerified", [true])]
-        );
+        const doctors = await prisma.doctor.findMany({
+            where: { isVerified: true },
+        });
         const data = parseStringify(doctors);
-        console.log("Verified Doctors:", data);
+
         return data;
     } catch (error) {
         console.error("An error occurred while retrieving the verified doctors list:", error);

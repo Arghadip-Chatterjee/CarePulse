@@ -103,12 +103,12 @@ const AdminPage = async () => {
         </section>
 
         {/* Appointments Table */}
-        <DataTable columns={appointmentColumns} data={safeAppointments.documents} />
+        <DataTable columns={appointmentColumns} data={safeAppointments.documents} isAdmin={true} />
 
         {/* Doctors Table */}
         <section className="admin-doctors w-full">
           <h2 className="text-xl font-semibold mb-4">Doctors Verification</h2>
-          <DataTable columns={doctorColumns} data={safeDoctors.documents} />
+          <DataTable columns={doctorColumns} data={safeDoctors.documents} isAdmin={true} />
         </section>
       </main>
     </div>

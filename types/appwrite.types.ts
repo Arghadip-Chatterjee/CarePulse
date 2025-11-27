@@ -1,44 +1,3 @@
-import { Models } from "node-appwrite";
-
-export interface Patient extends Models.Document {
-  userId: string;
-  name: string;
-  email: string;
-  phone: string;
-  birthDate: Date;
-  gender: Gender;
-  address: string;
-  occupation: string;
-  emergencyContactName: string;
-  emergencyContactNumber: string;
-  // primaryPhysician: string;
-  insuranceProvider: string;
-  insurancePolicyNumber: string;
-  allergies: string | undefined;
-  currentMedication: string | undefined;
-  familyMedicalHistory: string | undefined;
-  pastMedicalHistory: string | undefined;
-  identificationType: string | undefined;
-  identificationNumber: string | undefined;
-  identificationDocument: FormData | undefined;
-  privacyConsent: boolean;
-}
-
-export interface Appointment extends Models.Document {
-  patient: Patient;
-  schedule: Date;
-  status: Status;
-  doctor: string;
-  reason: string;
-  note: string;
-  userId: string;
-  cancellationReason: string | null;
-  appointmenttype: string;
-  doctorId: string;
-  prescription: String[];
-  meeting : string;
-}
-
 export enum Specialization {
   GeneralPractitioner = "General Practitioner",
   Cardiologist = "Cardiologist",
@@ -50,7 +9,56 @@ export enum Specialization {
   Other = "Other",
 }
 
-export interface Doctor extends Models.Document {
+export interface Patient {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  phone: string;
+  birthDate: Date;
+  gender: Gender;
+  address: string;
+  occupation: string;
+  emergencyContactName: string;
+  emergencyContactNumber: string;
+  insuranceProvider: string;
+  insurancePolicyNumber: string;
+  allergies: string | undefined;
+  currentMedication: string | undefined;
+  familyMedicalHistory: string | undefined;
+  pastMedicalHistory: string | undefined;
+  identificationType: string | undefined;
+  identificationNumber: string | undefined;
+  identificationDocumentId: string | undefined;
+  identificationDocumentUrl: string | undefined;
+  privacyConsent: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Appointment {
+  id: string;
+  patient: Patient;
+  schedule: Date;
+  status: Status;
+  doctor: string;
+  reason: string;
+  note: string;
+  userId: string;
+  cancellationReason: string | null;
+  appointmenttype: string;
+  doctorId: string;
+  prescription: string[];
+  meeting: string;
+  hasVisited: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+
+
+export interface Doctor {
+  id: string;
   userId: string;
   name: string;
   email: string;
@@ -60,15 +68,19 @@ export interface Doctor extends Models.Document {
   yearsOfExperience: string;
   hospitalAffiliation: string;
   consultationFee: string;
-  availableTimingsOnline: String[],
-  availableTimingsOffline: String[],
+  availableTimingsOnline: string[];
+  availableTimingsOffline: string[];
   isVerified: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export interface Prescription extends Models.Document {
+export interface Prescription {
+  id: string;
   prescription_url: string;
-  fileId: string;
   user_id: string;
   uploaded_at: Date;
-  appointmentId : string;
+  createdAt: Date;
+  updatedAt: Date;
+  appointmentId?: string;
 }

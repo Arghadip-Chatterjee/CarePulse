@@ -64,9 +64,8 @@ const PrescriptionConsole = async ({
         <FileUploadDemo userId={userId} />
         <DataTable
           columns={prescriptionColumns}
-          data={prescriptions.documents}
+          data={prescriptions || []}
         />
-        {/* Placeholder for DataTable */}
       </main>
     </div>
   );

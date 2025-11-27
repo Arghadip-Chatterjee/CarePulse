@@ -2,47 +2,46 @@
 
 import { ID, InputFile, Query } from "node-appwrite";
 
-import {
-  DATABASE_ID,
-  ENDPOINT,
-  PATIENT_COLLECTION_ID,
-  PROJECT_ID,
-  databases,
-  storage,
-  users,
-} from "../appwrite.config";
 import { parseStringify } from "../utils";
+import prisma from "@/lib/prisma";
+import { signUp } from "./auth.actions";
+import { uploadFile, fileToBase64 } from "./storage.actions";
 
-// CREATE APPWRITE USER
+// CREATE USER
 export const createUser = async (user: CreateUserParams) => {
   try {
-    // Create new user -> https://appwrite.io/docs/references/1.5.x/server-nodejs/users#create
-    const newuser = await users.create(
-      ID.unique(),
-      user.email,
-      user.phone,
-      undefined,
-      user.name
-    );
+    // Check if user already exists to avoid throwing error
+    const existingUser = await prisma.user.findUnique({
+      where: { email: user.email },
+      include: { patient: true },
+    });
 
-    return parseStringify(newuser);
-  } catch (error: any) {
-    // Check existing user
-    if (error && error?.code === 409) {
-      const existingUser = await users.list([
-        Query.equal("email", [user.email]),
-      ]);
-
-      return existingUser.users[0];
+    if (existingUser) {
+      return parseStringify(existingUser);
     }
+
+    // Create new user with auth
+    const newUser = await signUp({
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      password: (user as any).password || user.phone, // Use provided password or fallback to phone
+      role: "patient",
+    });
+
+    return parseStringify(newUser);
+  } catch (error: any) {
     console.error("An error occurred while creating a new user:", error);
+    throw error;
   }
 };
 
 // GET USER
 export const getUser = async (userId: string) => {
   try {
-    const user = await users.get(userId);
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
 
     return parseStringify(user);
   } catch (error) {
@@ -50,6 +49,7 @@ export const getUser = async (userId: string) => {
       "An error occurred while retrieving the user details:",
       error
     );
+    throw error;
   }
 };
 
@@ -59,51 +59,60 @@ export const registerPatient = async ({
   ...patient
 }: RegisterUserParams) => {
   try {
-    // Upload file ->  // https://appwrite.io/docs/references/cloud/client-web/storage#createFile
-    let file;
-    if (identificationDocument) {
-      const inputFile =
-        identificationDocument &&
-        InputFile.fromBlob(
-          identificationDocument?.get("blobFile") as Blob,
-          identificationDocument?.get("fileName") as string
-        );
+    // Upload file to Cloudinary
+    let fileId: string | null = null;
+    let fileUrl: string | null = null;
 
-      file = await storage.createFile(process.env.NEXT_PUBLIC_BUCKET_ID!, ID.unique(), inputFile);
+    if (identificationDocument) {
+      const blob = identificationDocument.get("blobFile") as Blob;
+      if (blob) {
+        const base64 = await fileToBase64(blob);
+        const uploadResult = await uploadFile(base64, "patient-documents");
+        fileId = uploadResult.publicId;
+        fileUrl = uploadResult.url;
+      }
     }
 
-    // Create new patient document -> https://appwrite.io/docs/references/cloud/server-nodejs/databases#createDocument
-    const newPatient = await databases.createDocument(
-      DATABASE_ID!,
-      // PATIENT_COLLECTION_ID!,
-      PATIENT_COLLECTION_ID!,
-      ID.unique(),
-      {
-        identificationDocumentId: file?.$id ? file.$id : null,
-        identificationDocumentUrl: file?.$id
-          ? `${ENDPOINT}/storage/buckets/${process.env.NEXT_PUBLIC_BUCKET_ID}/files/${file.$id}/view??project=${PROJECT_ID}`
-          : null,
-        ...patient,
-      }
-    );
+    // Extract userId - it should be in the patient object
+    const userId = (patient as any).userId;
+    
+    console.log("Patient data:", patient);
+    console.log("Extracted userId:", userId);
+    
+    if (!userId) {
+      throw new Error("userId is required to register a patient. Make sure the user is created first.");
+    }
+
+    // Remove userId from patient data to avoid conflicts
+    const { userId: _, ...patientData } = patient as any;
+
+    // Create new patient document and connect to existing user
+    const newPatient = await prisma.patient.create({
+      data: {
+        ...patientData,
+        identificationDocumentId: fileId,
+        identificationDocumentUrl: fileUrl,
+        user: {
+          connect: { id: userId }
+        }
+      },
+    });
 
     return parseStringify(newPatient);
   } catch (error) {
     console.error("An error occurred while creating a new patient:", error);
+    throw error;
   }
 };
 
 // GET PATIENT
 export const getPatient = async (userId: string) => {
   try {
-    const patients = await databases.listDocuments(
-      DATABASE_ID!,
-      // PATIENT_COLLECTION_ID!,
-      PATIENT_COLLECTION_ID!,
-      [Query.equal("userId", [userId])]
-    );
+    const patient = await prisma.patient.findFirst({
+      where: { userId },
+    });
 
-    return parseStringify(patients.documents[0]);
+    return parseStringify(patient);
   } catch (error) {
     console.error(
       "An error occurred while retrieving the patient details:",

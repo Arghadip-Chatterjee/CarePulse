@@ -4,12 +4,10 @@ import { revalidatePath } from "next/cache";
 import { ID, Query, InputFile } from "node-appwrite";
 import 'dotenv/config'
 
-import {
-    PROJECT_ID,
-    databases,
-    storage,
-} from "../appwrite.config";
+
 import { parseStringify } from "../utils";
+import prisma from "@/lib/prisma";
+import { uploadFile, deleteFile, fileToBase64 } from "./storage.actions";
 
 // Upload Prescription
 export async function uploadPrescription(
@@ -18,28 +16,21 @@ export async function uploadPrescription(
     userId: string,
     appointmentId?: string // optional
   ) {
-    const inputFile = InputFile.fromBlob(fileBlob, fileName);
+    // Convert blob to base64 and upload to Cloudinary
+    const base64 = await fileToBase64(fileBlob);
+    const uploadResult = await uploadFile(base64, "prescriptions", fileName);
   
-    const response = await storage.createFile(
-      process.env.NEXT_PUBLIC_BUCKET_ID!,
-      ID.unique(),
-      inputFile
-    );
+    const fileUrl = uploadResult.url;
   
-    const fileUrl = `${process.env.NEXT_PUBLIC_ENDPOINT}/storage/buckets/${process.env.NEXT_PUBLIC_BUCKET_ID}/files/${response.$id}/view?project=${PROJECT_ID}`;
-  
-    await databases.createDocument(
-      process.env.NEXT_PUBLIC_DATABASE_ID!,
-      process.env.NEXT_PUBLIC_PRESCRIPTION_COLLECTION_ID!,
-      ID.unique(),
-      {
+    await prisma.prescription.create({
+      data: {
         prescription_url: fileUrl,
-        fileId: response.$id,
+        fileId: uploadResult.publicId,
         user_id: userId,
-        uploaded_at: new Date().toISOString(),
+        uploaded_at: new Date(),
         appointmentId: appointmentId || null,
-      }
-    );
+      },
+    });
   
     revalidatePath(`/patients/${userId}/prescription`, 'page');
   
@@ -50,11 +41,9 @@ export async function uploadPrescription(
 // Fetch Prescriptions
 export const getPrescriptionListByUserId = async (userId: string) => {
     try {
-        const prescriptions = await databases.listDocuments(
-            process.env.NEXT_PUBLIC_DATABASE_ID!,
-            process.env.NEXT_PUBLIC_PRESCRIPTION_COLLECTION_ID!,
-            [Query.equal("user_id", [userId])]
-        );
+        const prescriptions = await prisma.prescription.findMany({
+            where: { user_id: userId },
+        });
 
         return parseStringify(prescriptions); // matches your appointment logic
     } catch (error) {
@@ -66,20 +55,20 @@ export const getPrescriptionListByUserId = async (userId: string) => {
 
 // Update Prescription
 export async function updatePrescription(id: string, newUrl: string) {
-    await databases.updateDocument(process.env.NEXT_PUBLIC_DATABASE_ID!, process.env.NEXT_PUBLIC_PRESCRIPTION_COLLECTION_ID!, id, { prescription_url: newUrl });
+    await prisma.prescription.update({
+        where: { id },
+        data: { prescription_url: newUrl },
+    });
 }
 
 export async function deletePrescription(docId: string, fileId: string, userId: string) {
-    await storage.deleteFile(
-        process.env.NEXT_PUBLIC_BUCKET_ID!,
-        fileId
-    );
+    // Delete from Cloudinary
+    await deleteFile(fileId);
 
-    await databases.deleteDocument(
-        process.env.NEXT_PUBLIC_DATABASE_ID!,
-        process.env.NEXT_PUBLIC_PRESCRIPTION_COLLECTION_ID!,
-        docId
-    );
+    // Delete from database
+    await prisma.prescription.delete({
+        where: { id: docId },
+    });
 
     // Revalidate the user's prescription page
     revalidatePath(`/patients/${userId}/prescription`, 'page');

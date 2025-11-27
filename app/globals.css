@@ -348,3 +348,39 @@
 .PhoneInputInput::placeholder {
   color: #1a1d21;
 }
+
+/* Custom styling for disabled dates in date picker */
+.react-datepicker__day--disabled {
+  position: relative;
+  color: #5a5a5a !important;
+  cursor: not-allowed !important;
+  opacity: 0.4 !important;
+}
+
+.react-datepicker__day--disabled::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background-color: #ff4444;
+  transform: translateY(-50%) rotate(-45deg);
+  z-index: 1;
+}
+
+.react-datepicker__day--disabled::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background-color: #ff4444;
+  transform: translateY(-50%) rotate(45deg);
+  z-index: 1;
+}
+
+.react-datepicker__day--disabled:hover {
+  background-color: transparent !important;
+}

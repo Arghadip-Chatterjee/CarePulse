@@ -24,6 +24,8 @@ export const PatientForm = () => {
       name: "",
       email: "",
       phone: "",
+      password: "",
+      confirmPassword: "",
     },
   });
 
@@ -35,12 +37,17 @@ export const PatientForm = () => {
         name: values.name,
         email: values.email,
         phone: values.phone,
+        password: values.password,
       };
 
       const newUser = await createUser(user);
 
       if (newUser) {
-        router.push(`/patients/${newUser.$id}/register`);
+        if (newUser.patient) {
+          router.push(`/patients/${newUser.id}/new-appointment`);
+        } else {
+          router.push(`/patients/${newUser.id}/register`);
+        }
       }
     } catch (error) {
       console.log(error);
@@ -83,6 +90,26 @@ export const PatientForm = () => {
           name="phone"
           label="Phone number"
           placeholder="(555) 123-4567"
+        />
+
+        <CustomFormField
+          fieldType={FormFieldType.INPUT}
+          control={form.control}
+          name="password"
+          label="Password"
+          placeholder="Enter your password"
+          iconSrc="/assets/icons/lock.svg"
+          iconAlt="password"
+        />
+
+        <CustomFormField
+          fieldType={FormFieldType.INPUT}
+          control={form.control}
+          name="confirmPassword"
+          label="Confirm Password"
+          placeholder="Confirm your password"
+          iconSrc="/assets/icons/lock.svg"
+          iconAlt="confirm password"
         />
 
         <SubmitButton isLoading={isLoading}>Get Started</SubmitButton>

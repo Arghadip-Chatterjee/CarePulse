@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { Form } from "@/components/ui/form";
-import { createUser } from "@/lib/actions/patient.actions";
+import { createDoctor } from "@/lib/actions/doctor.actions";
 import { UserFormValidation } from "@/lib/validation";
 
 import "react-phone-number-input/style.css";
@@ -24,6 +24,8 @@ export const DoctorUserForm = () => {
       name: "",
       email: "",
       phone: "",
+      password: "",
+      confirmPassword: "",
     },
   });
 
@@ -35,12 +37,17 @@ export const DoctorUserForm = () => {
         name: values.name,
         email: values.email,
         phone: values.phone,
+        password: values.password,
       };
 
-      const newUser = await createUser(user);
+      const newUser = await createDoctor(user);
 
       if (newUser) {
-        router.push(`/doctors/${newUser.$id}/register`);
+        if (newUser.doctor) {
+          router.push(`/doctors/${newUser.id}/console`);
+        } else {
+          router.push(`/doctors/${newUser.id}/register`);
+        }
       }
     } catch (error) {
       console.log(error);
@@ -83,6 +90,26 @@ export const DoctorUserForm = () => {
           name="phone"
           label="Phone number"
           placeholder="(555) 123-4567"
+        />
+
+        <CustomFormField
+          fieldType={FormFieldType.INPUT}
+          control={form.control}
+          name="password"
+          label="Password"
+          placeholder="Enter your password"
+          iconSrc="/assets/icons/lock.svg"
+          iconAlt="password"
+        />
+
+        <CustomFormField
+          fieldType={FormFieldType.INPUT}
+          control={form.control}
+          name="confirmPassword"
+          label="Confirm Password"
+          placeholder="Confirm your password"
+          iconSrc="/assets/icons/lock.svg"
+          iconAlt="confirm password"
         />
 
         <SubmitButton isLoading={isLoading}>Get Started</SubmitButton>
