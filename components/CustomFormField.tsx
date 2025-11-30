@@ -34,6 +34,7 @@ interface CustomProps {
   placeholder?: string;
   iconSrc?: string;
   iconAlt?: string;
+  iconComponent?: React.ReactNode;
   disabled?: boolean;
   dateFormat?: string;
   showTimeSelect?: boolean;
@@ -50,7 +51,11 @@ const RenderInput = ({ field, props }: { field: any; props: CustomProps }) => {
     case FormFieldType.INPUT:
       return (
         <div className="flex rounded-md border border-dark-500 bg-dark-400">
-          {props.iconSrc && (
+          {props.iconComponent ? (
+            <div className="ml-2 flex items-center justify-center">
+              {props.iconComponent}
+            </div>
+          ) : props.iconSrc ? (
             <Image
               src={props.iconSrc}
               height={24}
@@ -58,7 +63,7 @@ const RenderInput = ({ field, props }: { field: any; props: CustomProps }) => {
               alt={props.iconAlt || "icon"}
               className="ml-2"
             />
-          )}
+          ) : null}
           <FormControl>
             <Input
               placeholder={props.placeholder}

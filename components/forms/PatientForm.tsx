@@ -13,6 +13,7 @@ import { UserFormValidation } from "@/lib/validation";
 import "react-phone-number-input/style.css";
 import CustomFormField, { FormFieldType } from "../CustomFormField";
 import SubmitButton from "../SubmitButton";
+import { IconLock, IconShieldLock } from "@tabler/icons-react";
 
 export const PatientForm = () => {
   const router = useRouter();
@@ -100,6 +101,7 @@ export const PatientForm = () => {
           placeholder="Enter your password"
           iconSrc="/assets/icons/lock.svg"
           iconAlt="password"
+          iconComponent={<IconLock className="size-5 text-dark-600" />}
         />
 
         <CustomFormField
@@ -110,6 +112,7 @@ export const PatientForm = () => {
           placeholder="Confirm your password"
           iconSrc="/assets/icons/lock.svg"
           iconAlt="confirm password"
+          iconComponent={<IconShieldLock className="size-5 text-dark-600" />}
         />
 
         <SubmitButton isLoading={isLoading}>Get Started</SubmitButton>

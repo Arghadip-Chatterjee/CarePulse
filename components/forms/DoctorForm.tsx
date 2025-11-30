@@ -64,7 +64,7 @@ export const DoctorForm = ({ user }: { user: User }) => {
 
     try {
       const doctor = {
-        userId: user.id,
+        userId: user.$id,
         name: values.name,
         email: values.email,
         phone: values.phone,
@@ -84,7 +84,7 @@ export const DoctorForm = ({ user }: { user: User }) => {
       const newDoctor = await registerDoctor(doctor);
 
       if (newDoctor) {
-        router.push(`/doctors/${user.id}/console`);
+        router.push(`/doctors/${user.$id}/console`);
       }
     } catch (error) {
       console.error("Error registering doctor:", error);

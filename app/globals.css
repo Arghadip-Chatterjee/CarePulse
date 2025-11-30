@@ -4,6 +4,31 @@
 
 /* ========================================== TAILWIND STYLES */
 @layer base {
+  /* Lenis smooth scrolling - let Lenis handle the scroll behavior */
+  html {
+    scroll-behavior: auto;
+  }
+
+  html.lenis {
+    height: auto;
+  }
+
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+
+  .lenis.lenis-smooth [data-lenis-prevent] {
+    overscroll-behavior: contain;
+  }
+
+  .lenis.lenis-stopped {
+    overflow: hidden;
+  }
+
+  .lenis.lenis-scrolling iframe {
+    pointer-events: none;
+  }
+
   /* Remove scrollbar */
   .remove-scrollbar::-webkit-scrollbar {
     width: 0px;
@@ -23,6 +48,9 @@
   .remove-scrollbar::-webkit-scrollbar-thumb:hover {
     /* background: #1e2238; */
     background: transparent;
+  }
+  .theme {
+    --animate-gradient: gradient 8s linear infinite;
   }
 }
 
@@ -69,7 +97,7 @@
   }
 
   .copyright {
-    @apply text-14-regular justify-items-end text-center text-dark-600 xl:text-left;
+    @apply justify-items-end text-center text-dark-600 xl:text-left;
   }
 
   /* ==== SUCCESS */
@@ -105,7 +133,7 @@
 
   /* ==== File Upload */
   .file-upload {
-    @apply text-12-regular flex cursor-pointer  flex-col items-center justify-center gap-3 rounded-md border border-dashed border-dark-500 bg-dark-400 p-5;
+    @apply flex cursor-pointer  flex-col items-center justify-center gap-3 rounded-md border border-dashed border-dark-500 bg-dark-400 p-5;
   }
 
   .file-upload_label {
@@ -383,4 +411,12 @@
 
 .react-datepicker__day--disabled:hover {
   background-color: transparent !important;
+}
+
+@theme inline {
+  @keyframes gradient {
+  to {
+    background-position: var(--bg-size, 300%) 0;
+    }
+  }
 }

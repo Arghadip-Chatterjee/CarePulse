@@ -1,9 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "../prisma";
+import  prisma  from "../prisma";
 import { CreateAppointmentParams, UpdateAppointmentParams, AppointmentsResponse, AppointmentWithRelations } from "@/types/prisma.types";
-import { Status } from "@prisma/client";
 
 // Helper function to check for conflicting appointments
 const checkForConflictingAppointments = async (appointment: CreateAppointmentParams) => {
@@ -167,7 +166,7 @@ export const getRecentAppointmentList = async (): Promise<AppointmentsResponse> 
       cancelledCount: 0,
     };
 
-    const counts = appointments.reduce((acc, appointment) => {
+    const counts = appointments.reduce((acc:any, appointment:any) => {
       switch (appointment.status) {
         case "scheduled":
           acc.scheduledCount++;
@@ -257,7 +256,7 @@ export const getAppointmentListByUserId = async (userId: string): Promise<Appoin
       cancelledCount: 0,
     };
 
-    const counts = appointments.reduce((acc, appointment) => {
+    const counts = appointments.reduce((acc:any, appointment:any) => {
       switch (appointment.status) {
         case "scheduled":
           acc.scheduledCount++;
@@ -319,7 +318,7 @@ export const getAppointmentbyDoctorId = async (doctorId: string): Promise<Appoin
       cancelledCount: 0,
     };
 
-    const counts = appointments.reduce((acc, appointment) => {
+    const counts = appointments.reduce((acc:any, appointment:any) => {
       switch (appointment.status) {
         case "scheduled":
           acc.scheduledCount++;

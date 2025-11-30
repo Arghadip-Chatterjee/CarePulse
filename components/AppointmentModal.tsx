@@ -45,14 +45,14 @@ export const AppointmentModal = ({
 
     try {
       if (type === "schedule") {
-        await acceptAppointment(appointment.$id);
+        await acceptAppointment(appointment.id);
         await sendSMSNotification(
           userId,
           `Your appointment with ${appointment.patient.name} has been accepted.`
         );
         toast.success("Appointment accepted");
       } else if (type === "cancel") {
-        await cancelAppointment(appointment.$id);
+        await cancelAppointment(appointment.id);
         await sendSMSNotification(
           userId,
           `Your appointment with ${appointment.patient.name} has been cancelled.`

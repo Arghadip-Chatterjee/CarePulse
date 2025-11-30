@@ -4,6 +4,8 @@ import { Plus_Jakarta_Sans as FontSans } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 
 import { cn } from "@/lib/utils";
+import { SmoothScrollProvider } from "@/components/providers/SmoothScrollProvider";
+import { SmoothCursor } from "@/components/ui/smooth-cursor";
 
 const fontSans = FontSans({
   subsets: ["latin"],
@@ -29,13 +31,16 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={cn(
-          "min-h-screen bg-dark-300 font-sans antialiased",
+          "min-h-screen bg-dark-300 font-sans antialiased overflow-x-hidden cursor-none",
           fontSans.variable
         )}
       >
-        <ThemeProvider attribute="class" defaultTheme="dark">
-          {children}
-        </ThemeProvider>
+        <SmoothScrollProvider>
+          <SmoothCursor />
+          <ThemeProvider attribute="class" defaultTheme="dark">
+            {children}
+          </ThemeProvider>
+        </SmoothScrollProvider>
       </body>
     </html>
   );
