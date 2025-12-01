@@ -16,13 +16,13 @@ import {
 } from "@/lib/actions/ai.actions";
 import { getPrescriptionsByUserId } from "@/lib/actions/prescription.prisma.actions";
 
-// Prescription type matching Prisma schema (snake_case fields)
+// Prescription type matching Prisma Client output (camelCase fields)
 interface Prescription {
     id: string;
-    prescription_url: string;
+    prescriptionUrl: string;
     fileId: string;
-    user_id: string;
-    uploaded_at: Date;
+    userId: string;
+    uploadedAt: Date;
     appointmentId: string | null;
     createdAt: Date;
     updatedAt: Date;
@@ -50,7 +50,18 @@ export default function AIConsultPage({ params: { userId } }: AIConsultPageProps
     const loadPrescriptions = async () => {
         const result = await getPrescriptionsByUserId(userId);
         if (result.documents) {
-            setPrescriptions(result.documents);
+            // Transform snake_case from Prisma to camelCase for component
+            const transformedPrescriptions = result.documents.map((doc: any) => ({
+                id: doc.id,
+                prescriptionUrl: doc.prescription_url,
+                fileId: doc.fileId,
+                userId: doc.user_id,
+                uploadedAt: doc.uploaded_at,
+                appointmentId: doc.appointmentId,
+                createdAt: doc.createdAt,
+                updatedAt: doc.updatedAt,
+            }));
+            setPrescriptions(transformedPrescriptions);
         }
     };
 
@@ -187,24 +198,24 @@ export default function AIConsultPage({ params: { userId } }: AIConsultPageProps
                                     {prescriptions.map((prescription) => (
                                         <div
                                             key={prescription.id}
-                                            onClick={() => togglePrescription(prescription.prescription_url)}
-                                            className={`cursor-pointer bg-dark-300 border-2 rounded-lg p-4 transition-all ${selectedPrescriptions.includes(prescription.prescription_url)
+                                            onClick={() => togglePrescription(prescription.prescriptionUrl)}
+                                            className={`cursor-pointer bg-dark-300 border-2 rounded-lg p-4 transition-all ${selectedPrescriptions.includes(prescription.prescriptionUrl)
                                                 ? "border-green-500 bg-green-500/10"
                                                 : "border-dark-500 hover:border-dark-400"
                                                 }`}
                                         >
                                             <div className="flex items-center justify-between mb-3">
                                                 <span className="text-sm text-dark-700">
-                                                    {new Date(prescription.uploaded_at).toLocaleDateString()}
+                                                    {new Date(prescription.uploadedAt).toLocaleDateString()}
                                                 </span>
-                                                {selectedPrescriptions.includes(prescription.prescription_url) && (
+                                                {selectedPrescriptions.includes(prescription.prescriptionUrl) && (
                                                     <svg className="w-6 h-6 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                                                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                                     </svg>
                                                 )}
                                             </div>
                                             <img
-                                                src={prescription.prescription_url}
+                                                src={prescription.prescriptionUrl}
                                                 alt="Prescription"
                                                 className="w-full h-48 object-cover rounded"
                                             />
