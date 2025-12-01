@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { ID, Query } from "node-appwrite";
 
-import nodemailer from 'nodemailer';
+// import nodemailer from 'nodemailer';
 
 import { Appointment } from "@/types/appwrite.types";
 
@@ -136,17 +136,17 @@ export const createAppointment = async (
   }
 };
 
-const transporter = nodemailer.createTransport({
-  host: process.env.NEXT_PUBLIC_SMTP_HOST!, // e.g., 'smtp.gmail.com'
-  port: 587, // or 465 for secure
-  secure: false, // true for 465, false for other ports
-  auth: {
-    user: process.env.NEXT_PUBLIC_SMTP_USER!, // your email address
-    pass: process.env.NEXT_PUBLIC_SMTP_PASS!, // your email password or app-specific password
-  },
-  ignoreTLS: true,
-  service: 'Gmail',
-});
+// const transporter = nodemailer.createTransport({
+//   host: process.env.NEXT_PUBLIC_SMTP_HOST!, // e.g., 'smtp.gmail.com'
+//   port: 587, // or 465 for secure
+//   secure: false, // true for 465, false for other ports
+//   auth: {
+//     user: process.env.NEXT_PUBLIC_SMTP_USER!, // your email address
+//     pass: process.env.NEXT_PUBLIC_SMTP_PASS!, // your email password or app-specific password
+//   },
+//   ignoreTLS: true,
+//   service: 'Gmail',
+// });
 
 //  GET RECENT APPOINTMENTS
 export const getRecentAppointmentList = async () => {
@@ -234,8 +234,8 @@ export const sendEmail = async (templateParams: any) => {
       html: templateParams.html, // html body
     };
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Email sent successfully:', info.messageId);
+    // const info = await transporter.sendMail(mailOptions);
+    // console.log('Email sent successfully:', info.messageId);
   } catch (error) {
     console.error('An error occurred while sending email:', error);
   }

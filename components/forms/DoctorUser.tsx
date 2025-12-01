@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -98,8 +99,7 @@ export const DoctorUserForm = () => {
           name="password"
           label="Password"
           placeholder="Enter your password"
-          iconSrc="/assets/icons/lock.svg"
-          iconAlt="password"
+          iconComponent={<Lock className="h-6 w-6 text-dark-600" />}
         />
 
         <CustomFormField
@@ -108,8 +108,7 @@ export const DoctorUserForm = () => {
           name="confirmPassword"
           label="Confirm Password"
           placeholder="Confirm your password"
-          iconSrc="/assets/icons/lock.svg"
-          iconAlt="confirm password"
+          iconComponent={<Lock className="h-6 w-6 text-dark-600" />}
         />
 
         <SubmitButton isLoading={isLoading}>Get Started</SubmitButton>

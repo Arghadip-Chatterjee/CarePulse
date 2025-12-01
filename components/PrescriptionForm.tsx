@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import jsPDF from "jspdf";
 
 interface Appointment {
   id: string;
@@ -11,12 +10,23 @@ interface Appointment {
   };
 }
 
+interface Doctor {
+  name?: string;
+  email?: string;
+  phone?: string;
+  specialization?: string;
+  licenseNumber?: string;
+  hospitalAffiliation?: string;
+}
+
 export default function PrescriptionForm({
   userId,
   appointments,
+  doctor,
 }: {
   userId: string;
   appointments: Appointment[];
+  doctor?: Doctor;
 }) {
   const [selectedAppointmentId, setSelectedAppointmentId] = useState("");
   const [medicine, setMedicine] = useState("");
@@ -24,98 +34,206 @@ export default function PrescriptionForm({
   const [instructions, setInstructions] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const generatePrescriptionImage = async (patientName: string, appointmentId: string, doctorInfo?: Doctor): Promise<Blob> => {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    if (!ctx) {
+      throw new Error("Could not get canvas context");
+    }
+
+    // Use 2x scale for high DPI (crisp when zoomed)
+    const scale = 2;
+
+    // Smaller base dimensions (more reasonable size)
+    const baseWidth = 600;
+    const baseHeight = 800;
+
+    // Set actual canvas size at higher resolution
+    canvas.width = baseWidth * scale;
+    canvas.height = baseHeight * scale;
+
+    // Scale the context to match
+    ctx.scale(scale, scale);
+
+    // Enable text rendering hints for better quality
+    ctx.textBaseline = "top";
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+
+    // Background
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, baseWidth, baseHeight);
+
+    // Title
+    ctx.fillStyle = "#000000";
+    ctx.font = "bold 28px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("Medical Prescription", baseWidth / 2, 30);
+
+    // Horizontal line
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(30, 50);
+    ctx.lineTo(baseWidth - 30, 50);
+    ctx.stroke();
+
+    // Prescription details
+    ctx.font = "14px Arial";
+    ctx.textAlign = "left";
+    let yPos = 70;
+
+    ctx.fillText(`Patient Name: ${patientName}`, 30, yPos);
+    yPos += 22;
+    ctx.fillText(`Appointment ID: ${appointmentId}`, 30, yPos);
+    yPos += 22;
+    ctx.fillText(`Date: ${new Date().toLocaleDateString()}`, 30, yPos);
+    yPos += 35;
+
+    // Doctor details section
+    if (doctorInfo && doctorInfo.name) {
+      ctx.font = "bold 14px Arial";
+      ctx.fillText("Prescribing Doctor:", 30, yPos);
+      ctx.font = "14px Arial";
+      yPos += 22;
+      ctx.fillText(`Dr. ${doctorInfo.name}`, 50, yPos);
+      yPos += 20;
+      if (doctorInfo.specialization) {
+        ctx.fillText(`Specialization: ${doctorInfo.specialization}`, 50, yPos);
+        yPos += 20;
+      }
+      if (doctorInfo.licenseNumber) {
+        ctx.fillText(`License Number: ${doctorInfo.licenseNumber}`, 50, yPos);
+        yPos += 20;
+      }
+      if (doctorInfo.hospitalAffiliation) {
+        ctx.fillText(`Hospital: ${doctorInfo.hospitalAffiliation}`, 50, yPos);
+        yPos += 20;
+      }
+      yPos += 15;
+    }
+
+    // Medicine section
+    ctx.font = "bold 14px Arial";
+    ctx.fillText("Medicine:", 30, yPos);
+    ctx.font = "14px Arial";
+    yPos += 22;
+    const medicineText = medicine || "N/A";
+    const medicineLines = medicineText.match(/.{1,50}/g) || [medicineText];
+    medicineLines.forEach((line: string) => {
+      ctx.fillText(line, 50, yPos);
+      yPos += 20;
+    });
+    yPos += 12;
+
+    // Dosage section
+    ctx.font = "bold 14px Arial";
+    ctx.fillText("Dosage:", 30, yPos);
+    ctx.font = "14px Arial";
+    yPos += 22;
+    const dosageText = dosage || "N/A";
+    const dosageLines = dosageText.match(/.{1,50}/g) || [dosageText];
+    dosageLines.forEach((line: string) => {
+      ctx.fillText(line, 50, yPos);
+      yPos += 20;
+    });
+    yPos += 12;
+
+    // Instructions section
+    ctx.font = "bold 14px Arial";
+    ctx.fillText("Instructions:", 30, yPos);
+    ctx.font = "14px Arial";
+    yPos += 22;
+    const instructionsText = instructions || "N/A";
+    const instructionsLines = instructionsText.match(/.{1,50}/g) || [instructionsText];
+    instructionsLines.forEach((line: string) => {
+      ctx.fillText(line, 50, yPos);
+      yPos += 20;
+    });
+    yPos += 30;
+
+    // Doctor signature section
+    if (doctorInfo && doctorInfo.name) {
+      ctx.strokeStyle = "#000000";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(30, yPos);
+      ctx.lineTo(baseWidth - 30, yPos);
+      ctx.stroke();
+      yPos += 30;
+
+      ctx.font = "14px Arial";
+      ctx.textAlign = "left";
+      ctx.fillText(`Dr. ${doctorInfo.name}`, baseWidth - 200, yPos);
+      yPos += 20;
+      if (doctorInfo.licenseNumber) {
+        ctx.font = "12px Arial";
+        ctx.fillText(`License: ${doctorInfo.licenseNumber}`, baseWidth - 200, yPos);
+      }
+    }
+
+    // Footer
+    ctx.font = "italic 12px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("Generated by CarePulse", baseWidth / 2, baseHeight - 25);
+
+    // Convert canvas to blob with high quality
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve(blob);
+        } else {
+          reject(new Error("Failed to convert canvas to blob"));
+        }
+      }, "image/png", 1.0); // Maximum quality
+    });
+  };
+
   const handleSubmit = async () => {
     if (!selectedAppointmentId) return alert("Please select an appointment.");
-  
+
     setLoading(true);
 
-    // Find the selected appointment to get the userId
-    const selectedAppointment = appointments.find(appt => appt.id === selectedAppointmentId);
-    const appointmentUserId = selectedAppointment ? selectedAppointment.userId : "";
-    const patientName = selectedAppointment ? selectedAppointment.patient.name : "";
-  
-    // Create PDF
-    const doc = new jsPDF();
-    
-    // Add title
-    doc.setFontSize(20);
-    doc.setFont("helvetica", "bold");
-    doc.text("Medical Prescription", 105, 20, { align: "center" });
-    
-    // Add horizontal line
-    doc.setLineWidth(0.5);
-    doc.line(20, 25, 190, 25);
-    
-    // Add prescription details
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "normal");
-    
-    let yPos = 40;
-    doc.text(`Patient Name: ${patientName}`, 20, yPos);
-    yPos += 10;
-    doc.text(`Appointment ID: ${selectedAppointmentId}`, 20, yPos);
-    yPos += 10;
-    doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, yPos);
-    yPos += 20;
-    
-    // Medicine section
-    doc.setFont("helvetica", "bold");
-    doc.text("Medicine:", 20, yPos);
-    doc.setFont("helvetica", "normal");
-    yPos += 8;
-    doc.text(medicine || "N/A", 30, yPos);
-    yPos += 15;
-    
-    // Dosage section
-    doc.setFont("helvetica", "bold");
-    doc.text("Dosage:", 20, yPos);
-    doc.setFont("helvetica", "normal");
-    yPos += 8;
-    doc.text(dosage || "N/A", 30, yPos);
-    yPos += 15;
-    
-    // Instructions section
-    doc.setFont("helvetica", "bold");
-    doc.text("Instructions:", 20, yPos);
-    doc.setFont("helvetica", "normal");
-    yPos += 8;
-    const splitInstructions = doc.splitTextToSize(instructions || "N/A", 160);
-    doc.text(splitInstructions, 30, yPos);
-    
-    // Add footer
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "italic");
-    doc.text("Generated by CarePulse", 105, 280, { align: "center" });
-    
-    // Convert PDF to blob
-    const pdfBlob = doc.output("blob");
-    const fileName = `prescription-${selectedAppointmentId}-${Date.now()}.pdf`;
-  
-    const formData = new FormData();
-    formData.append("file", pdfBlob, fileName);
-    formData.append("userId", appointmentUserId);
-    formData.append("appointmentId", selectedAppointmentId);
-  
-    const res = await fetch("/api/upload-prescription", {
-      method: "POST",
-      body: formData,
-    });
-  
-    const data = await res.json();
-  
-    if (res.ok) {
-      alert("Prescription Uploaded ✅");
-      setMedicine("");
-      setDosage("");
-      setInstructions("");
-      setSelectedAppointmentId("");
-    } else {
-      alert("Upload failed ❌: " + data.error);
+    try {
+      // Find the selected appointment to get the userId
+      const selectedAppointment = appointments.find(appt => appt.id === selectedAppointmentId);
+      const appointmentUserId = selectedAppointment ? selectedAppointment.userId : "";
+      const patientName = selectedAppointment ? selectedAppointment.patient.name : "";
+
+      // Generate prescription as image
+      const imageBlob = await generatePrescriptionImage(patientName, selectedAppointmentId, doctor);
+      const fileName = `prescription-${selectedAppointmentId}-${Date.now()}.png`;
+
+      const formData = new FormData();
+      formData.append("file", imageBlob, fileName);
+      formData.append("userId", appointmentUserId);
+      formData.append("appointmentId", selectedAppointmentId);
+
+      const res = await fetch("/api/upload-prescription", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert("Prescription Uploaded ✅");
+        setMedicine("");
+        setDosage("");
+        setInstructions("");
+        setSelectedAppointmentId("");
+      } else {
+        alert("Upload failed ❌: " + data.error);
+      }
+    } catch (error) {
+      console.error("Error generating prescription:", error);
+      alert("Failed to generate prescription image. Please try again.");
+    } finally {
+      setLoading(false);
     }
-  
-    setLoading(false);
   };
-  
+
   return (
     <div className="max-w-xl mx-auto mt-10 bg-white p-8 rounded-2xl shadow-lg space-y-6 border">
       <h2 className="text-2xl font-semibold text-gray-800">

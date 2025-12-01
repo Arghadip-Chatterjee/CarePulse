@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "../prisma";
-import { CreateUserParams, RegisterPatientParams, PatientWithUser } from "@/types/prisma.types";
+import prisma from "@/lib/prisma";
+import { CreateUserParams, RegisterPatientParams, PatientWithUser, PatientsResponse } from "@/types/prisma.types";
 
 // CREATE USER
 export const createUser = async (user: CreateUserParams) => {
@@ -18,7 +18,10 @@ export const createUser = async (user: CreateUserParams) => {
 
     // Create new user
     const newUser = await prisma.user.create({
-      data: user
+      data: {
+        ...user,
+        password: "defaultPassword123", // TODO: Implement proper password handling
+      }
     });
 
     return newUser;
@@ -69,14 +72,17 @@ export const registerPatient = async ({
     const newPatient = await prisma.patient.create({
       data: {
         userId: user.id,
+        name: patientData.name,
+        email: patientData.email,
+        phone: patientData.phone,
         birthDate: patientData.birthDate,
         gender: patientData.gender,
         address: patientData.address,
         occupation: patientData.occupation,
         emergencyContactName: patientData.emergencyContactName,
         emergencyContactNumber: patientData.emergencyContactNumber,
-        insuranceProvider: patientData.insuranceProvider,
-        insurancePolicyNumber: patientData.insurancePolicyNumber,
+        insuranceProvider: patientData.insuranceProvider || "N/A",
+        insurancePolicyNumber: patientData.insurancePolicyNumber || "N/A",
         allergies: patientData.allergies,
         currentMedication: patientData.currentMedication,
         familyMedicalHistory: patientData.familyMedicalHistory,
@@ -110,7 +116,7 @@ export const getPatient = async (userId: string): Promise<PatientWithUser | null
       }
     });
 
-    return patient;
+    return patient as unknown as PatientWithUser;
   } catch (error) {
     console.error("An error occurred while retrieving the patient:", error);
     throw error;
@@ -118,7 +124,7 @@ export const getPatient = async (userId: string): Promise<PatientWithUser | null
 };
 
 // GET ALL PATIENTS
-export const getPatientsList = async () => {
+export const getPatientsList = async (): Promise<PatientsResponse> => {
   try {
     const patients = await prisma.patient.findMany({
       include: {
@@ -131,7 +137,7 @@ export const getPatientsList = async () => {
 
     return {
       totalCount: patients.length,
-      documents: patients
+      documents: patients as unknown as PatientWithUser[]
     };
   } catch (error) {
     console.error("An error occurred while retrieving the patients list:", error);

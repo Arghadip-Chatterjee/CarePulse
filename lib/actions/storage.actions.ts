@@ -17,15 +17,16 @@ export const uploadFile = async (
     // Determine file type based on the data URI
     const isTextFile = typeof fileData === 'string' && fileData.startsWith('data:text/plain');
     const isPdfFile = typeof fileData === 'string' && fileData.startsWith('data:application/pdf');
-    
+    const isImageFile = typeof fileData === 'string' && fileData.startsWith('data:image/');
+
     const uploadOptions: any = {
       folder,
-      resource_type: (isTextFile || isPdfFile) ? "raw" : "auto",
+      resource_type: (isTextFile || isPdfFile) ? "raw" : (isImageFile ? "image" : "auto"),
     };
 
-    // If it's a text or PDF file and we have a fileName, include the extension in the public_id
-    if ((isTextFile || isPdfFile) && fileName) {
-      uploadOptions.public_id = `${folder}/${fileName}`;
+    // If it's a text, PDF, or image file and we have a fileName, include the extension in the public_id
+    if ((isTextFile || isPdfFile || isImageFile) && fileName) {
+      uploadOptions.public_id = `${folder}/${fileName.replace(/\.[^/.]+$/, "")}`; // Remove extension for public_id
       uploadOptions.folder = undefined; // Don't use folder when specifying full public_id
     }
 

@@ -101,6 +101,7 @@ const DoctorConsole = async ({ params: { userId } }: SearchParamProps) => {
         <PrescriptionForm
           userId={userId}
           appointments={appointments.documents}
+          doctor={doctor}
         />
 
         {/* Prescription List for each appointment in table format */}

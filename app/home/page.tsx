@@ -32,7 +32,7 @@ const Home = ({ searchParams }: SearchParamProps) => {
             <Link href="/doctors" className="text-green-500">
               Doctor
             </Link>
-            <Link href="/?admin=true" className="text-green-500">
+            <Link href="/admin?admin=true" className="text-green-500">
               Admin
             </Link>
           </div>
@@ -46,7 +46,7 @@ const Home = ({ searchParams }: SearchParamProps) => {
         alt="patient"
         className="side-img max-w-[50%]"
       />
-   </div>
+    </div>
   );
 };
 

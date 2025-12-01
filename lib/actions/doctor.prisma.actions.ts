@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "../prisma";
+import prisma from "@/lib/prisma";
 import { CreateDoctorParams, DoctorWithUser, DoctorsResponse } from "@/types/prisma.types";
 
 // CREATE DOCTOR USER
@@ -21,7 +21,9 @@ export const createDoctor = async (doctor: CreateDoctorParams) => {
       data: {
         name: doctor.name,
         email: doctor.email,
-        phone: doctor.phone
+        phone: doctor.phone,
+        password: "defaultPassword123", // TODO: Implement proper password generation/hashing
+        role: "doctor",
       }
     });
 
@@ -54,6 +56,9 @@ export const registerDoctor = async ({
     const newDoctor = await prisma.doctor.create({
       data: {
         userId: user.id,
+        name: doctorData.name,
+        email: doctorData.email,
+        phone: doctorData.phone,
         specialization: doctorData.specialization,
         licenseNumber: doctorData.licenseNumber,
         yearsOfExperience: doctorData.yearsOfExperience,
@@ -90,7 +95,7 @@ export const getDoctor = async (userId: string): Promise<DoctorWithUser | null> 
       }
     });
 
-    return doctor;
+    return doctor as unknown as DoctorWithUser;
   } catch (error) {
     console.error("An error occurred while retrieving the doctor details:", error);
     throw error;
@@ -126,7 +131,7 @@ export const getDoctorsList = async (): Promise<DoctorsResponse> => {
     return {
       totalCount: doctors.length,
       ...counts,
-      documents: doctors
+      documents: doctors as unknown as DoctorWithUser[]
     };
   } catch (error) {
     console.error("An error occurred while retrieving the doctors list:", error);
@@ -168,7 +173,7 @@ export const getVerifiedDoctors = async () => {
 
     return {
       totalCount: doctors.length,
-      documents: doctors
+      documents: doctors as unknown as DoctorWithUser[]
     };
   } catch (error) {
     console.error("An error occurred while retrieving the verified doctors list:", error);
