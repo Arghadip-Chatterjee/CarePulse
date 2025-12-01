@@ -1,7 +1,8 @@
 "use server";
 
-import prisma  from "@/lib/prisma";
+import prisma from "@/lib/prisma";
 import OpenAI from "openai";
+import { parseStringify } from "@/lib/utils";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -65,7 +66,7 @@ Be professional, empathetic, and thorough. If you cannot read something clearly,
     }));
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4o-mini",
       messages: [
         { role: "system", content: systemPrompt },
         {
@@ -114,7 +115,7 @@ export async function sendMessageToAI(
       return { success: false, error: "Consultation not found" };
     }
 
-    const history = consultation.conversationHistory as Message[];
+    const history = (consultation.conversationHistory as unknown) as Message[];
 
     // Add user message to history
     const updatedHistory = [
@@ -124,7 +125,7 @@ export async function sendMessageToAI(
 
     // Get AI response
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4o-mini",
       messages: updatedHistory,
       max_tokens: 800,
     });
@@ -141,7 +142,7 @@ export async function sendMessageToAI(
     await prisma.aIConsultation.update({
       where: { id: consultationId },
       data: {
-        conversationHistory: finalHistory,
+        conversationHistory: finalHistory as any,
       },
     });
 
@@ -163,11 +164,12 @@ export async function completeConsultation(consultationId: string) {
       return { success: false, error: "Consultation not found" };
     }
 
-    const history = consultation.conversationHistory as Message[];
+    const history = (consultation.conversationHistory as unknown) as Message[];
 
     // Ask AI to extract structured information
     const extractionPrompt = `Based on our conversation, please extract and summarize the following information in JSON format:
 {
+  "summary": "A comprehensive narrative summary of the consultation covering medications, symptoms, and recommendations",
   "medications": ["list of medications identified"],
   "symptoms": ["current symptoms reported by patient"],
   "concerns": ["main health concerns"],
@@ -176,13 +178,13 @@ export async function completeConsultation(consultationId: string) {
 }`;
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4o-mini",
       messages: [
         ...history,
         { role: "user", content: extractionPrompt },
       ],
       response_format: { type: "json_object" },
-      max_tokens: 500,
+      max_tokens: 1000,
     });
 
     const extractedInfo = JSON.parse(
@@ -193,6 +195,7 @@ export async function completeConsultation(consultationId: string) {
     await prisma.aIConsultation.update({
       where: { id: consultationId },
       data: {
+        conversationSummary: extractedInfo.summary || null,
         extractedInfo,
         status: "completed",
       },
@@ -226,13 +229,32 @@ export async function getConsultation(consultationId: string) {
 // Save voice consultation summary
 export async function saveVoiceConsultationSummary(
   consultationId: string,
-  summary: string
+  summary: string,
+  transcripts: string[] = []
 ) {
   try {
+    // Fetch current history to append to it
+    const current = await prisma.aIConsultation.findUnique({
+      where: { id: consultationId },
+      select: { conversationHistory: true }
+    });
+
+    let history = ((current?.conversationHistory as unknown) as Message[]) || [];
+
+    // Format transcripts as messages
+    const voiceMessages = transcripts.map(t => ({
+      role: "assistant" as const,
+      content: t
+    }));
+
+    // Append voice transcripts
+    const updatedHistory = [...history, ...voiceMessages];
+
     await prisma.aIConsultation.update({
       where: { id: consultationId },
       data: {
         conversationSummary: summary,
+        conversationHistory: updatedHistory as any,
         status: "completed",
       },
     });
@@ -241,5 +263,20 @@ export async function saveVoiceConsultationSummary(
   } catch (error) {
     console.error("Error saving voice consultation summary:", error);
     return { success: false, error: "Failed to save summary" };
+  }
+}
+
+// Get all consultations for a user
+export async function getConsultationsByUserId(userId: string) {
+  try {
+    const consultations = await prisma.aIConsultation.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return { success: true, consultations: parseStringify(consultations) };
+  } catch (error) {
+    console.error("Error fetching user consultations:", error);
+    return { success: false, error: "Failed to fetch consultations" };
   }
 }

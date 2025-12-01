@@ -8,12 +8,18 @@ import { DataTable } from "@/components/table/DataTable";
 import { Button } from "@/components/ui/button";
 import { getAppointmentListByUserId } from "@/lib/actions/appointment.actions";
 import { getPatient } from "@/lib/actions/patient.actions";
+import { getConsultationsByUserId } from "@/lib/actions/ai.actions";
+import { AIConsultationList } from "@/components/AIConsultationList";
 
 const PatientConsole = async ({ params: { userId } }: SearchParamProps) => {
   const patient = await getPatient(userId);
   console.log(patient);
   const appointments = await getAppointmentListByUserId(userId);
   console.log(appointments);
+
+  const aiConsultationsResult = await getConsultationsByUserId(userId);
+  const aiConsultations = aiConsultationsResult.success ? aiConsultationsResult.consultations : [];
+
   revalidatePath(`/patients/${userId}/console`);
 
   if (!patient) {
@@ -91,6 +97,14 @@ const PatientConsole = async ({ params: { userId } }: SearchParamProps) => {
         </section>
 
         <DataTable columns={columns1} data={appointments.documents} />
+
+        <section className="w-full space-y-4 pt-10">
+          <h2 className="header">AI Consultation History</h2>
+          <p className="text-dark-700">
+            Review your past consultations and summaries
+          </p>
+          <AIConsultationList consultations={aiConsultations} />
+        </section>
       </main>
     </div>
   );
