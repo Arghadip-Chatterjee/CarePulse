@@ -111,3 +111,18 @@ model Prescription {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
+
+model AIConsultation {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId                String
+  patientId             String   @db.ObjectId
+  prescriptionUrls      String[] // Cloudinary URLs of selected prescriptions
+  conversationHistory   Json     // Array of {role, content} messages
+  extractedInfo         Json?    // Structured data extracted by AI
+  status                String   // "in_progress", "completed"
+  consultationType      String   @default("text") // "text" or "voice"
+  conversationSummary   String?  // AI-generated summary of voice consultation
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}

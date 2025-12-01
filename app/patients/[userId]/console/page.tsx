@@ -49,8 +49,12 @@ const PatientConsole = async ({ params: { userId } }: SearchParamProps) => {
             <Button className="">New Appointment</Button>
           </Link>
 
+          <Link href={`/patients/${userId}/ai-consult`}>
+            <Button className="bg-green-600 hover:bg-green-700">AI Consult</Button>
+          </Link>
+
           <Link href={`/patients/${userId}/prescription`}>
-           <Button className="">Prescription Upload</Button>
+            <Button className="">Prescription Upload</Button>
           </Link>
 
           <p className="text-16-semibold">Patient Dashboard</p>

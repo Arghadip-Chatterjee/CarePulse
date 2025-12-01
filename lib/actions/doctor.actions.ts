@@ -175,6 +175,20 @@ export const getVerifiedDoctors = async () => {
     }
 }
 
+// GET DOCTOR BY ID
+export const getDoctorById = async (doctorId: string) => {
+    try {
+        const doctor = await prisma.doctor.findUnique({
+            where: { id: doctorId },
+        });
+        
+        return parseStringify(doctor);
+    } catch (error) {
+        console.error("An error occurred while retrieving the doctor by ID:", error);
+        return null;
+    }
+};
+
 
 
 

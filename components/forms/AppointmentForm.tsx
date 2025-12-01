@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 // import Image from "next/image";
 import { useRouter } from "next/navigation";
 
-import { Dispatch,SetStateAction,useState,useMemo,useEffect } from "react";
+import { Dispatch, SetStateAction, useState, useMemo, useEffect } from "react";
 
 import { useForm } from "react-hook-form";
 
@@ -69,7 +69,7 @@ export const AppointmentForm = ({
       appointmenttype: "online",
       doctorId: appointment?.doctorId || "",
       prescription: [],
-      meeting : "",
+      meeting: "",
     },
   });
 
@@ -95,11 +95,11 @@ export const AppointmentForm = ({
   // Get available timings based on appointment type
   const availableTimings = useMemo(() => {
     if (!selectedDoctor) return [];
-    
-    const timings = watchedAppointmentType === "online" 
-      ? selectedDoctor.availableTimingsOnline 
+
+    const timings = watchedAppointmentType === "online"
+      ? selectedDoctor.availableTimingsOnline
       : selectedDoctor.availableTimingsOffline;
-    
+
     return timings || [];
   }, [selectedDoctor, watchedAppointmentType]);
 
@@ -107,7 +107,7 @@ export const AppointmentForm = ({
   const parseTimingString = (timing: string) => {
     const parts = timing.split(":");
     if (parts.length < 2) return { day: "", time: "" };
-    
+
     const day = parts[0].trim();
     const time = parts.slice(1).join(":").trim();
     return { day, time };
@@ -119,7 +119,7 @@ export const AppointmentForm = ({
       const { day } = parseTimingString(t);
       return day === dayName;
     });
-    
+
     if (timing) {
       const { time } = parseTimingString(timing);
       return time;
@@ -130,7 +130,7 @@ export const AppointmentForm = ({
   // Filter dates - only allow days that match available timings
   const filterDate = (date: Date) => {
     if (availableTimings.length === 0) return true;
-    
+
     const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
     return availableTimings.some((timing: string) => {
       const { day } = parseTimingString(timing);
@@ -147,7 +147,7 @@ export const AppointmentForm = ({
 
     const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
     const availableTime = getTimeForDay(dayName);
-    
+
     if (availableTime) {
       // Parse the time string (e.g., "10:00 AM") and set it on the date
       const timeParts = availableTime.match(/(\d+):(\d+)\s*(AM|PM)/i);
@@ -155,14 +155,14 @@ export const AppointmentForm = ({
         let hours = parseInt(timeParts[1]);
         const minutes = parseInt(timeParts[2]);
         const meridiem = timeParts[3].toUpperCase();
-        
+
         // Convert to 24-hour format
         if (meridiem === "PM" && hours !== 12) {
           hours += 12;
         } else if (meridiem === "AM" && hours === 12) {
           hours = 0;
         }
-        
+
         const newDate = new Date(date);
         newDate.setHours(hours, minutes, 0, 0);
         form.setValue("schedule", newDate);
@@ -188,7 +188,7 @@ export const AppointmentForm = ({
     setIsLoading(true);
     setIsSubmitted(true);
     console.log("🚀 Starting appointment creation with submission ID:", currentSubmissionId);
-  
+
     let status;
     switch (type) {
       case "schedule":
@@ -200,7 +200,7 @@ export const AppointmentForm = ({
       default:
         status = "pending";
     }
-  
+
     try {
       if (type === "create" && patientId) {
         const doctorInfo = JSON.parse(values.doctor);
@@ -217,16 +217,16 @@ export const AppointmentForm = ({
           appointmenttype: values.appointmenttype,
           doctorId: doctorInfo.doctorId,
           prescription: values.prescription,
-          meeting : "",
+          meeting: "",
           // Note: submissionId will be logged but not stored in DB until schema is updated
         };
-  
+
         console.log("Appointment data being sent:", appointment);
         console.log("Submission ID:", currentSubmissionId);
-  
+
         const newAppointment = await createAppointment(appointment, currentSubmissionId);
         console.log("✅ Appointment created successfully:", newAppointment);
-  
+
         if (newAppointment) {
           form.reset();
           router.push(
@@ -247,9 +247,9 @@ export const AppointmentForm = ({
           },
           type,
         };
-  
+
         const updatedAppointment = await updateAppointment(appointmentToUpdate);
-  
+
         if (updatedAppointment) {
           setOpen && setOpen(false);
           form.reset();
@@ -257,7 +257,7 @@ export const AppointmentForm = ({
       }
     } catch (error: any) {
       console.error("❌ Appointment creation failed:", error);
-      
+
       // Provide more specific error messages
       if (error?.message?.includes("already exists")) {
         alert(error.message);
@@ -316,11 +316,52 @@ export const AppointmentForm = ({
                       doctorName: doctor.name,
                     })}
                   >
-                    {doctor.name}
+                    <div className="flex flex-col">
+                      <span className="font-medium">{doctor.name}</span>
+                      <span className="text-xs text-dark-600">{doctor.specialization}</span>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </CustomFormField>
+
+            {/* Display Selected Doctor Details */}
+            {selectedDoctor && (
+              <div className="bg-dark-400 border border-dark-500 rounded-lg p-6 mt-4">
+                <h3 className="text-18-bold mb-4 text-white flex items-center gap-2">
+                  <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  Doctor Details
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-14-regular text-dark-700 mb-1">Name</p>
+                    <p className="text-16-semibold text-white">{selectedDoctor.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-14-regular text-dark-700 mb-1">Specialization</p>
+                    <p className="text-16-semibold text-green-500">{selectedDoctor.specialization}</p>
+                  </div>
+                  <div>
+                    <p className="text-14-regular text-dark-700 mb-1">Experience</p>
+                    <p className="text-16-semibold text-white">{selectedDoctor.yearsOfExperience} years</p>
+                  </div>
+                  <div>
+                    <p className="text-14-regular text-dark-700 mb-1">Hospital</p>
+                    <p className="text-16-semibold text-white">{selectedDoctor.hospitalAffiliation}</p>
+                  </div>
+                  <div>
+                    <p className="text-14-regular text-dark-700 mb-1">Consultation Fee</p>
+                    <p className="text-16-semibold text-white">₹{selectedDoctor.consultationFee}</p>
+                  </div>
+                  <div>
+                    <p className="text-14-regular text-dark-700 mb-1">License Number</p>
+                    <p className="text-16-semibold text-white">{selectedDoctor.licenseNumber}</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Display Doctor's Available Timings */}
             {selectedDoctor && availableTimings.length > 0 && (

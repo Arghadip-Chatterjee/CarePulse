@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "../prisma";
-import { CreatePrescriptionParams, PrescriptionWithRelations, PrescriptionsResponse } from "@/types/prisma.types";
+import  prisma  from "../prisma";
+import { CreatePrescriptionParams, Prescription, PrescriptionsResponse } from "@/types/prisma.types";
 
 // UPLOAD PRESCRIPTION
 export async function uploadPrescription(
@@ -10,7 +10,7 @@ export async function uploadPrescription(
   fileName: string,
   userId: string,
   appointmentId?: string
-): Promise<PrescriptionWithRelations> {
+): Promise<Prescription> {
   try {
     // TODO: Implement file upload to your preferred storage service
     // For now, we'll create a mock URL
@@ -19,28 +19,11 @@ export async function uploadPrescription(
 
     const prescription = await prisma.prescription.create({
       data: {
-        userId,
+        user_id: userId,
         appointmentId,
-        prescriptionUrl,
-        fileId
-      },
-      include: {
-        user: true,
-        appointment: {
-          include: {
-            user: true,
-            patient: {
-              include: {
-                user: true
-              }
-            },
-            doctor: {
-              include: {
-                user: true
-              }
-            }
-          }
-        }
+        prescription_url: prescriptionUrl,
+        fileId,
+        uploaded_at: new Date()
       }
     });
 
@@ -56,25 +39,7 @@ export async function uploadPrescription(
 export const getPrescriptionsByUserId = async (userId: string): Promise<PrescriptionsResponse> => {
   try {
     const prescriptions = await prisma.prescription.findMany({
-      where: { userId },
-      include: {
-        user: true,
-        appointment: {
-          include: {
-            user: true,
-            patient: {
-              include: {
-                user: true
-              }
-            },
-            doctor: {
-              include: {
-                user: true
-              }
-            }
-          }
-        }
-      },
+      where: { user_id: userId },
       orderBy: {
         createdAt: 'desc'
       }
@@ -98,24 +63,6 @@ export const getPrescriptionsByAppointmentId = async (appointmentId: string): Pr
   try {
     const prescriptions = await prisma.prescription.findMany({
       where: { appointmentId },
-      include: {
-        user: true,
-        appointment: {
-          include: {
-            user: true,
-            patient: {
-              include: {
-                user: true
-              }
-            },
-            doctor: {
-              include: {
-                user: true
-              }
-            }
-          }
-        }
-      },
       orderBy: {
         createdAt: 'desc'
       }
@@ -138,24 +85,6 @@ export const getPrescriptionsByAppointmentId = async (appointmentId: string): Pr
 export const getAllPrescriptions = async (): Promise<PrescriptionsResponse> => {
   try {
     const prescriptions = await prisma.prescription.findMany({
-      include: {
-        user: true,
-        appointment: {
-          include: {
-            user: true,
-            patient: {
-              include: {
-                user: true
-              }
-            },
-            doctor: {
-              include: {
-                user: true
-              }
-            }
-          }
-        }
-      },
       orderBy: {
         createdAt: 'desc'
       }
@@ -175,29 +104,11 @@ export const getAllPrescriptions = async (): Promise<PrescriptionsResponse> => {
 };
 
 // UPDATE PRESCRIPTION
-export async function updatePrescription(id: string, newUrl: string): Promise<PrescriptionWithRelations | null> {
+export async function updatePrescription(id: string, newUrl: string): Promise<Prescription | null> {
   try {
     const prescription = await prisma.prescription.update({
       where: { id },
-      data: { prescriptionUrl: newUrl },
-      include: {
-        user: true,
-        appointment: {
-          include: {
-            user: true,
-            patient: {
-              include: {
-                user: true
-              }
-            },
-            doctor: {
-              include: {
-                user: true
-              }
-            }
-          }
-        }
-      }
+      data: { prescription_url: newUrl }
     });
 
     revalidatePath("/admin");
@@ -222,3 +133,4 @@ export const deletePrescription = async (id: string): Promise<boolean> => {
     throw error;
   }
 };
+

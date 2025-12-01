@@ -179,3 +179,4 @@ export const deletePatient = async (userId: string) => {
     throw error;
   }
 };
+

@@ -4,8 +4,9 @@ import { ColumnDef } from "@tanstack/react-table";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 
-import { Tooltip,TooltipContent,TooltipProvider,TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 import {
   acceptAppointment,
@@ -18,7 +19,7 @@ import { verifyDoctor } from "@/lib/actions/doctor.actions";
 
 
 import { formatDateTime } from "@/lib/utils";
-import { Appointment,Doctor,Prescription } from "@/types/appwrite.types";
+import { Appointment, Doctor, Prescription } from "@/types/appwrite.types";
 
 
 import { StatusBadge } from "../StatusBadge";
@@ -298,6 +299,70 @@ export const columns1: ColumnDef<Appointment>[] = [
     },
   },
   {
+    accessorKey: "doctorDetails",
+    header: "Doctor Details",
+    cell: ({ row }) => {
+      const appointment = row.original;
+      const [doctorData, setDoctorData] = useState<any>(null);
+      const [isLoading, setIsLoading] = useState(false);
+      const [isOpen, setIsOpen] = useState(false);
+
+      const fetchDoctorDetails = async () => {
+        if (doctorData) {
+          // Data already fetched, just open modal
+          setIsOpen(true);
+          return;
+        }
+
+        setIsLoading(true);
+        try {
+          // Import the action dynamically to avoid circular dependencies
+          const { getDoctorById } = await import("@/lib/actions/doctor.actions");
+          const doctor = await getDoctorById(appointment.doctorId);
+          setDoctorData(doctor);
+          setIsOpen(true); // Open modal after data is fetched
+        } catch (error) {
+          console.error("Error fetching doctor details:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      // Lazy import the modal component
+      const [DoctorModal, setDoctorModal] = useState<any>(null);
+
+      useEffect(() => {
+        import("@/components/DoctorDetailsModal").then((mod) => {
+          setDoctorModal(() => mod.DoctorDetailsModal);
+        });
+      }, []);
+
+      if (!DoctorModal) {
+        return <p className="text-14-medium text-dark-700">Loading...</p>;
+      }
+
+      return (
+        <>
+          <Button
+            onClick={fetchDoctorDetails}
+            disabled={isLoading}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm"
+          >
+            {isLoading ? "Loading..." : "View Doctor"}
+          </Button>
+
+          {doctorData && (
+            <DoctorModal
+              doctor={doctorData}
+              isOpen={isOpen}
+              onClose={() => setIsOpen(false)}
+            />
+          )}
+        </>
+      );
+    },
+  },
+  {
     accessorKey: "meeting",
     header: "Meeting",
     cell: ({ row }) => {
@@ -306,23 +371,23 @@ export const columns1: ColumnDef<Appointment>[] = [
 
       const scheduledTime = new Date(appointment.schedule);
       const currentTime = new Date();
-      
+
       // Meeting is available 15 minutes before scheduled time
       const meetingStartTime = new Date(scheduledTime.getTime() - 15 * 60 * 1000);
       // Meeting expires 2 hours after scheduled time
       const meetingEndTime = new Date(scheduledTime.getTime() + 2 * 60 * 60 * 1000);
-      
+
       const isTooEarly = currentTime < meetingStartTime;
       const isExpired = currentTime > meetingEndTime;
       const isAvailable = !isTooEarly && !isExpired;
-  
+
       if (appointment.appointmenttype === "online" && appointment.status === "scheduled") {
         const handleMeeting = async () => {
           router.push(
             `/video?appointmentId=${appointment.id}&userId=${appointment.userId}&roomID=${appointment.id}`
           );
         };
-  
+
         const button = !appointment.meeting ? (
           <Button
             className="bg-blue-600 text-white px-4 py-2 rounded-md"
@@ -345,7 +410,7 @@ export const columns1: ColumnDef<Appointment>[] = [
             </Button>
           </Link>
         );
-  
+
         // Show different tooltips based on timing
         if (isTooEarly) {
           return (

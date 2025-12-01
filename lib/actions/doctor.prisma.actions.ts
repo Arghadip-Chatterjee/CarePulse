@@ -217,3 +217,4 @@ export const deleteDoctor = async (doctorId: string) => {
     throw error;
   }
 };
+

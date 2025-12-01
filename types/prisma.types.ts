@@ -1,7 +1,8 @@
-import { User, Patient, Doctor, Appointment, Prescription, Gender, Status, Specialization } from '@prisma/client'
+import { User, Patient, Doctor, Appointment, Prescription } from '@prisma/client'
+import { Specialization } from './appwrite.types'
 
 // Re-export Prisma types
-export type { User, Patient, Doctor, Appointment, Prescription, Gender, Status, Specialization }
+export type { User, Patient, Doctor, Appointment, Prescription }
 
 // Extended types with relations
 export type PatientWithUser = Patient & {
@@ -114,5 +115,6 @@ export interface PatientsResponse {
 
 export interface PrescriptionsResponse {
   totalCount: number
-  documents: PrescriptionWithRelations[]
+  documents: Prescription[]
 }
+
