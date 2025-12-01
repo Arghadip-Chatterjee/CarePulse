@@ -16,10 +16,16 @@ import {
 } from "@/lib/actions/ai.actions";
 import { getPrescriptionsByUserId } from "@/lib/actions/prescription.prisma.actions";
 
+// Prescription type matching Prisma schema (snake_case fields)
 interface Prescription {
     id: string;
     prescription_url: string;
+    fileId: string;
+    user_id: string;
     uploaded_at: Date;
+    appointmentId: string | null;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 interface AIConsultPageProps {
@@ -183,8 +189,8 @@ export default function AIConsultPage({ params: { userId } }: AIConsultPageProps
                                             key={prescription.id}
                                             onClick={() => togglePrescription(prescription.prescription_url)}
                                             className={`cursor-pointer bg-dark-300 border-2 rounded-lg p-4 transition-all ${selectedPrescriptions.includes(prescription.prescription_url)
-                                                    ? "border-green-500 bg-green-500/10"
-                                                    : "border-dark-500 hover:border-dark-400"
+                                                ? "border-green-500 bg-green-500/10"
+                                                : "border-dark-500 hover:border-dark-400"
                                                 }`}
                                         >
                                             <div className="flex items-center justify-between mb-3">
