@@ -33,6 +33,139 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+// Component for Doctor Details Cell
+const DoctorDetailsCell = ({ appointment }: { appointment: Appointment }) => {
+  const [doctorData, setDoctorData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [DoctorModal, setDoctorModal] = useState<any>(null);
+
+  useEffect(() => {
+    import("@/components/DoctorDetailsModal").then((mod) => {
+      setDoctorModal(() => mod.DoctorDetailsModal);
+    });
+  }, []);
+
+  const fetchDoctorDetails = async () => {
+    if (doctorData) {
+      setIsOpen(true);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { getDoctorById } = await import("@/lib/actions/doctor.actions");
+      const doctor = await getDoctorById(appointment.doctorId);
+      setDoctorData(doctor);
+      setIsOpen(true);
+    } catch (error) {
+      console.error("Error fetching doctor details:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (!DoctorModal) {
+    return <p className="text-14-medium text-dark-700">Loading...</p>;
+  }
+
+  return (
+    <>
+      <Button
+        onClick={fetchDoctorDetails}
+        disabled={isLoading}
+        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm"
+      >
+        {isLoading ? "Loading..." : "View Doctor"}
+      </Button>
+
+      {doctorData && (
+        <DoctorModal
+          doctor={doctorData}
+          isOpen={isOpen}
+          onClose={() => setIsOpen(false)}
+        />
+      )}
+    </>
+  );
+};
+
+// Component for Meeting Cell
+const MeetingCell = ({ appointment }: { appointment: Appointment }) => {
+  const router = useRouter();
+  const scheduledTime = new Date(appointment.schedule);
+  const currentTime = new Date();
+
+  // Meeting is available 15 minutes before scheduled time
+  const meetingStartTime = new Date(scheduledTime.getTime() - 15 * 60 * 1000);
+  // Meeting expires 2 hours after scheduled time
+  const meetingEndTime = new Date(scheduledTime.getTime() + 2 * 60 * 60 * 1000);
+
+  const isTooEarly = currentTime < meetingStartTime;
+  const isExpired = currentTime > meetingEndTime;
+  const isAvailable = !isTooEarly && !isExpired;
+
+  const handleMeeting = async () => {
+    router.push(
+      `/video?appointmentId=${appointment.id}&userId=${appointment.userId}&roomID=${appointment.id}`
+    );
+  };
+
+  if (appointment.appointmenttype === "online" && appointment.status === "scheduled") {
+    const button = !appointment.meeting ? (
+      <Button
+        className="bg-blue-600 text-white px-4 py-2 rounded-md"
+        onClick={handleMeeting}
+        disabled={!isAvailable}
+      >
+        Start Meeting
+      </Button>
+    ) : (
+      <Link
+        href={appointment.meeting}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <Button
+          className="bg-blue-600 text-white px-4 py-2 rounded-md"
+          disabled={!isAvailable}
+        >
+          View Meeting
+        </Button>
+      </Link>
+    );
+
+    // Show different tooltips based on timing
+    if (isTooEarly) {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>{button}</TooltipTrigger>
+            <TooltipContent>
+              <p className="text-white">Meeting available 15 minutes before scheduled time</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    } else if (isExpired) {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>{button}</TooltipTrigger>
+            <TooltipContent>
+              <p className="text-white">This meeting has expired</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    } else {
+      return button;
+    }
+  } else {
+    return <p className="text-14-medium text-white">Not Available</p>;
+  }
+};
+
 export const columns: ColumnDef<Appointment>[] = [
   {
     header: "#",
@@ -302,144 +435,14 @@ export const columns1: ColumnDef<Appointment>[] = [
     accessorKey: "doctorDetails",
     header: "Doctor Details",
     cell: ({ row }) => {
-      const appointment = row.original;
-      const [doctorData, setDoctorData] = useState<any>(null);
-      const [isLoading, setIsLoading] = useState(false);
-      const [isOpen, setIsOpen] = useState(false);
-
-      const fetchDoctorDetails = async () => {
-        if (doctorData) {
-          // Data already fetched, just open modal
-          setIsOpen(true);
-          return;
-        }
-
-        setIsLoading(true);
-        try {
-          // Import the action dynamically to avoid circular dependencies
-          const { getDoctorById } = await import("@/lib/actions/doctor.actions");
-          const doctor = await getDoctorById(appointment.doctorId);
-          setDoctorData(doctor);
-          setIsOpen(true); // Open modal after data is fetched
-        } catch (error) {
-          console.error("Error fetching doctor details:", error);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
-      // Lazy import the modal component
-      const [DoctorModal, setDoctorModal] = useState<any>(null);
-
-      useEffect(() => {
-        import("@/components/DoctorDetailsModal").then((mod) => {
-          setDoctorModal(() => mod.DoctorDetailsModal);
-        });
-      }, []);
-
-      if (!DoctorModal) {
-        return <p className="text-14-medium text-dark-700">Loading...</p>;
-      }
-
-      return (
-        <>
-          <Button
-            onClick={fetchDoctorDetails}
-            disabled={isLoading}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm"
-          >
-            {isLoading ? "Loading..." : "View Doctor"}
-          </Button>
-
-          {doctorData && (
-            <DoctorModal
-              doctor={doctorData}
-              isOpen={isOpen}
-              onClose={() => setIsOpen(false)}
-            />
-          )}
-        </>
-      );
+      return <DoctorDetailsCell appointment={row.original} />;
     },
   },
   {
     accessorKey: "meeting",
     header: "Meeting",
     cell: ({ row }) => {
-      const router = useRouter();
-      const appointment = row.original;
-
-      const scheduledTime = new Date(appointment.schedule);
-      const currentTime = new Date();
-
-      // Meeting is available 15 minutes before scheduled time
-      const meetingStartTime = new Date(scheduledTime.getTime() - 15 * 60 * 1000);
-      // Meeting expires 2 hours after scheduled time
-      const meetingEndTime = new Date(scheduledTime.getTime() + 2 * 60 * 60 * 1000);
-
-      const isTooEarly = currentTime < meetingStartTime;
-      const isExpired = currentTime > meetingEndTime;
-      const isAvailable = !isTooEarly && !isExpired;
-
-      if (appointment.appointmenttype === "online" && appointment.status === "scheduled") {
-        const handleMeeting = async () => {
-          router.push(
-            `/video?appointmentId=${appointment.id}&userId=${appointment.userId}&roomID=${appointment.id}`
-          );
-        };
-
-        const button = !appointment.meeting ? (
-          <Button
-            className="bg-blue-600 text-white px-4 py-2 rounded-md"
-            onClick={handleMeeting}
-            disabled={!isAvailable}
-          >
-            Start Meeting
-          </Button>
-        ) : (
-          <Link
-            href={appointment.meeting}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Button
-              className="bg-blue-600 text-white px-4 py-2 rounded-md"
-              disabled={!isAvailable}
-            >
-              View Meeting
-            </Button>
-          </Link>
-        );
-
-        // Show different tooltips based on timing
-        if (isTooEarly) {
-          return (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>{button}</TooltipTrigger>
-                <TooltipContent>
-                  <p className="text-white">Meeting available 15 minutes before scheduled time</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        } else if (isExpired) {
-          return (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>{button}</TooltipTrigger>
-                <TooltipContent>
-                  <p className="text-white">This meeting has expired</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        } else {
-          return button;
-        }
-      } else {
-        return <p className="text-14-medium text-white">Not Available</p>;
-      }
+      return <MeetingCell appointment={row.original} />;
     },
   }
 ];

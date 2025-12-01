@@ -239,7 +239,7 @@ export async function saveVoiceConsultationSummary(
       select: { conversationHistory: true }
     });
 
-    let history = ((current?.conversationHistory as unknown) as Message[]) || [];
+    const history = ((current?.conversationHistory as unknown) as Message[]) || [];
 
     // Format transcripts as messages
     const voiceMessages = transcripts.map(t => ({

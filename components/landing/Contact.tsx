@@ -21,7 +21,7 @@ export const Contact = () => {
       />
 
       {/* Subtle animated background */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f2937_1px,transparent_1px),linear-gradient(to_bottom,#1f2937_1px,transparent_1px)] bg-[size:3rem_3rem] opacity-10"></div>
+      <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'linear-gradient(to right, #1f2937 1px, transparent 1px), linear-gradient(to bottom, #1f2937 1px, transparent 1px)', backgroundSize: '3rem 3rem' }}></div>
 
       {/* Glowing orb */}
       <motion.div
