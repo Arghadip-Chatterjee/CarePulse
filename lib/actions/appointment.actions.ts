@@ -739,7 +739,7 @@ const sendAppointmentUpdateEmail = async (
         text = `Your appointment has been confirmed. Appointment ID: ${appointmentId}. Date: ${scheduleDate.dateTime}. Doctor: ${doctor?.name || 'Not Assigned'}`;
         break;
 
-      case 'cancelled':
+      case 'cancelled': {
         subject = 'CarePulse - Appointment Cancelled';
         const cancellationReason = additionalInfo?.cancellationReason || appointmentWithDetails.cancellationReason || 'Cancelled';
         html = `
@@ -762,6 +762,7 @@ const sendAppointmentUpdateEmail = async (
         `;
         text = `Your appointment has been cancelled. Appointment ID: ${appointmentId}. Date: ${scheduleDate.dateTime}. Reason: ${cancellationReason}`;
         break;
+      }
 
       case 'visited':
         subject = 'CarePulse - Visit Confirmed';
