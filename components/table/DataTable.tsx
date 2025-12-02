@@ -8,7 +8,6 @@ import {
   useReactTable,
   getFilteredRowModel,
   ColumnFiltersState,
-  GlobalFilterState,
 } from "@tanstack/react-table";
 import Image from "next/image";
 import { useEffect, useState } from "react";
