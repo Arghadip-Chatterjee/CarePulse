@@ -50,7 +50,7 @@ export interface Appointment {
   doctorId: string;
   prescription: string[];
   meeting: string;
-  hasVisited: boolean;
+  hasVisited: boolean | null;
   createdAt: Date;
   updatedAt: Date;
 }

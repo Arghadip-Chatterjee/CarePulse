@@ -13,6 +13,7 @@ import {
   sendSMSNotification,
   sendEmail,
   cancelAppointment,
+  cancelAppointmentByPatient,
   updateAppointmentVisitedStatus,
 } from "@/lib/actions/appointment.actions";
 import { verifyDoctor } from "@/lib/actions/doctor.actions";
@@ -25,6 +26,7 @@ import { Appointment, Doctor, Prescription } from "@/types/appwrite.types";
 import { StatusBadge } from "../StatusBadge";
 import { Button } from "../ui/button";
 import { Checkbox } from "../ui/checkbox";
+import { useToast } from "@/components/hooks/use-toast";
 import {
   Select,
   SelectContent,
@@ -87,6 +89,161 @@ const DoctorDetailsCell = ({ appointment }: { appointment: Appointment }) => {
         />
       )}
     </>
+  );
+};
+
+// Component for Admin Actions Cell
+const AdminActionsCell = ({ appointment }: { appointment: Appointment }) => {
+  const { toast } = useToast();
+
+  const handleAccept = async () => {
+    try {
+      await acceptAppointment(appointment.id);
+      const date = formatDateTime(appointment.schedule).dateTime;
+      await sendSMSNotification(
+        appointment.userId,
+        `Your appointment with ${appointment.doctor} has been Accepted at ${date}. Apppintment ID : ${appointment.id}.Check Mail for Further Updates`
+      );
+      
+      toast({
+        title: "Success",
+        description: "Appointment accepted successfully!",
+        variant: "default",
+      });
+
+      const templateParams = {
+        to_email: `${appointment.patient.email}`,
+        subject: "CarePulse Appointment Update",
+        text: `Your appointment has been Booked with Doctor ${appointment.doctor} .`,
+        html: `
+        <h1>Appointment Update</h1>
+        <h3> Appointment ID : ${appointment.id} </h3>
+        <p>Your appointment has been Booked with Doctor ${appointment.doctor} in ${appointment.appointmenttype} mode at ${date} </p>
+        <p>Please visit the doctor at the scheduled time and manage your Prescriptions from the Portal.</p>
+        <h4>Thank You for Choosing CarePulse</h4>
+        <hr/>
+        <h4>Team CarePulse</h4>
+        `,
+      };
+
+      await sendEmail(templateParams);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to accept appointment. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCancel = async () => {
+    try {
+      await cancelAppointment(appointment.id);
+      const date = formatDateTime(appointment.schedule).dateTime;
+      await sendSMSNotification(
+        appointment.userId,
+        `Your appointment with ${appointment.doctor} has been Cancelled at ${date}. Apppintment ID : ${appointment.id}.Check Mail for Further Updates`
+      );
+      
+      toast({
+        title: "Success",
+        description: "Appointment cancelled successfully!",
+        variant: "default",
+      });
+
+      const templateParams = {
+        to_email: `${appointment.patient.email}`,
+        subject: "CarePulse Appointment Update",
+        text: `Your appointment has been Cancelled with Doctor ${appointment.doctor} .`,
+        html: `
+        <h1>Appointment Update</h1>
+        <h3> Appointment ID : ${appointment.id} </h3>
+        <p>Your appointment has been Cancelled with Doctor ${appointment.doctor} in ${appointment.appointmenttype} mode at ${date} </p>
+        <p>Please Rebook Your Appointment and manage your Prescriptions from the Portal.</p>
+        <h4>Thank You for Choosing CarePulse</h4>
+        <hr/>
+        <h4>Team CarePulse</h4>
+        `,
+      };
+
+      await sendEmail(templateParams);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to cancel appointment. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Only show actions if the schedule is pending
+  if (appointment.status === "pending") {
+    return (
+      <div className="flex gap-2 pl-4">
+        <Button
+          onClick={handleAccept}
+          className="px-3 py-2 text-xs text-white bg-green-600 rounded-md hover:bg-green-700"
+        >
+          Accept
+        </Button>
+        <Button
+          onClick={handleCancel}
+          className="px-3 py-2 text-xs text-white bg-red-600 rounded-md hover:bg-red-700"
+        >
+          Cancel
+        </Button>
+      </div>
+    );
+  }
+
+  return null;
+};
+
+// Component for Patient Actions Cell
+const PatientActionsCell = ({ appointment }: { appointment: Appointment }) => {
+  const { toast } = useToast();
+  const scheduledTime = new Date(appointment.schedule);
+  const currentTime = new Date();
+  const isFutureAppointment = scheduledTime > currentTime;
+  const canCancel = isFutureAppointment && 
+                   (appointment.status === "pending" || appointment.status === "scheduled");
+
+  const handleEmergencyCancel = async () => {
+    if (!confirm(
+      "Are you cancelling due to an emergency? This action cannot be undone."
+    )) {
+      return;
+    }
+
+    try {
+      await cancelAppointmentByPatient(appointment.id, true);
+      toast({
+        title: "Success",
+        description: "Appointment cancelled successfully due to emergency!",
+        variant: "default",
+      });
+      window.location.reload();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to cancel appointment. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  if (!canCancel) {
+    return null;
+  }
+
+  return (
+    <Button
+      onClick={handleEmergencyCancel}
+      className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 text-xs"
+      size="sm"
+    >
+      Emergency Cancel
+    </Button>
   );
 };
 
@@ -210,86 +367,7 @@ export const columns: ColumnDef<Appointment>[] = [
     id: "actions",
     header: () => <div className="pl-4">Actions</div>,
     cell: ({ row }) => {
-      const appointment = row.original;
-
-      const handleAccept = async () => {
-        await acceptAppointment(appointment.id);
-        const date = formatDateTime(appointment.schedule).dateTime;
-        await sendSMSNotification(
-          appointment.userId,
-          `Your appointment with ${appointment.doctor} has been Accepted at ${date}. Apppintment ID : ${appointment.id}.Check Mail for Further Updates`
-        );
-        alert("Appointment accepted successfully!");
-        // Show toast message
-        // toast("Appointment accepted successfully!");
-
-        const templateParams = {
-          to_email: `${appointment.patient.email}`,
-          subject: "CarePulse Appointment Update",
-          text: `Your appointment has been Booked with Doctor ${appointment.doctor} .`,
-          html: `
-          <h1>Appointment Update</h1>
-          <h3> Appointment ID : ${appointment.id} </h3>
-          <p>Your appointment has been Booked with Doctor ${appointment.doctor} in ${appointment.appointmenttype} mode at ${date} </p>
-          <p>Please visit the doctor at the scheduled time and manage your Prescriptions from the Portal.</p>
-          <h4>Thank You for Choosing CarePulse</h4>
-          <hr/>
-          <h4>Team CarePulse</h4>
-          `,
-        };
-
-        await sendEmail(templateParams);
-      };
-
-      const handleCancel = async () => {
-        await cancelAppointment(appointment.id);
-        const date = formatDateTime(appointment.schedule).dateTime;
-        await sendSMSNotification(
-          appointment.userId,
-          `Your appointment with ${appointment.doctor} has been Cancelled at ${date}. Apppintment ID : ${appointment.id}.Check Mail for Further Updates`
-        );
-        alert("Appointment cancelled successfully!");
-        // Show toast message
-        // toast("Appointment cancelled successfully!", );
-        const templateParams = {
-          to_email: `${appointment.patient.email}`,
-          subject: "CarePulse Appointment Update",
-          text: `Your appointment has been Cancelled with Doctor ${appointment.doctor} .`,
-          html: `
-          <h1>Appointment Update</h1>
-          <h3> Appointment ID : ${appointment.id} </h3>
-          <p>Your appointment has been Cancelled with Doctor ${appointment.doctor} in ${appointment.appointmenttype} mode at ${date} </p>
-          <p>Please Rebook Your Appointment and manage your Prescriptions from the Portal.</p>
-          <h4>Thank You for Choosing CarePulse</h4>
-          <hr/>
-          <h4>Team CarePulse</h4>
-          `,
-        };
-
-        await sendEmail(templateParams);
-      };
-
-      // Only show actions if the schedule is pending
-      if (appointment.status === "pending") {
-        return (
-          <div className="flex gap-2 pl-4">
-            <button
-              onClick={handleAccept}
-              className="px-3 py-2 text-xs text-white bg-green-600 rounded-md hover:bg-green-700"
-            >
-              Accept
-            </button>
-            <button
-              onClick={handleCancel}
-              className="px-3 py-2 text-xs text-white bg-red-600 rounded-md hover:bg-red-700"
-            >
-              Cancel
-            </button>
-          </div>
-        );
-      }
-
-      return null; // No actions if not pending
+      return <AdminActionsCell appointment={row.original} />;
     },
   },
 ];
@@ -408,21 +486,55 @@ export const columns1: ColumnDef<Appointment>[] = [
     header: "Has Visited",
     cell: ({ row }) => {
       const appointment = row.original;
+      
+      // Determine default value based on status first, then hasVisited
+      // If status is "visited", show "Yes"
+      // If status is "notVisited", show "No"
+      // Otherwise, default to "null"
+      let defaultValue = "null";
+      if (appointment.status === "visited") {
+        defaultValue = "yes";
+      } else if (appointment.status === "notVisited") {
+        defaultValue = "no";
+      } else if (appointment.hasVisited !== null && appointment.hasVisited !== undefined) {
+        // Fallback to hasVisited value if status doesn't indicate visited/notVisited
+        defaultValue = appointment.hasVisited ? "yes" : "no";
+      }
+      
+      // Check if appointment date has arrived (today or in the past)
+      const appointmentDate = new Date(appointment.schedule);
+      appointmentDate.setHours(0, 0, 0, 0);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const isAppointmentDateArrived = appointmentDate <= today;
+      
+      // Disable dropdown if:
+      // 1. Status is "pending", "cancelled", or "waitingList"
+      // 2. Status is "scheduled" but appointment date is in the future
+      // Enable only if: status is "scheduled" AND appointment date has arrived (today or past)
+      const isDisabled = 
+        appointment.status === "pending" || 
+        appointment.status === "cancelled" || 
+        appointment.status === "waitingList" ||
+        (appointment.status === "scheduled" && !isAppointmentDateArrived);
+      
       return (
         <div className="flex items-center gap-2">
           <Select
             onValueChange={async (value) => {
               await updateAppointmentVisitedStatus(
                 appointment.id,
-                value === "yes"
+                value === "yes" ? true : value === "no" ? false : null
               );
             }}
-            defaultValue={appointment.hasVisited ? "yes" : "no"}
+            defaultValue={defaultValue}
+            disabled={isDisabled}
           >
-            <SelectTrigger className="shad-select-trigger">
+            <SelectTrigger className={`shad-select-trigger ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}>
               <SelectValue placeholder="Select" />
             </SelectTrigger>
             <SelectContent className="shad-select-content">
+              <SelectItem value="null">Null</SelectItem>
               <SelectItem value="yes">Yes</SelectItem>
               <SelectItem value="no">No</SelectItem>
             </SelectContent>
@@ -443,6 +555,49 @@ export const columns1: ColumnDef<Appointment>[] = [
     header: "Meeting",
     cell: ({ row }) => {
       return <MeetingCell appointment={row.original} />;
+    },
+  },
+  {
+    id: "patientActions",
+    header: "Actions",
+    cell: ({ row }) => {
+      const appointment = row.original;
+      const scheduledTime = new Date(appointment.schedule);
+      const currentTime = new Date();
+      const isFutureAppointment = scheduledTime > currentTime;
+      const canCancel = isFutureAppointment && 
+                       (appointment.status === "pending" || appointment.status === "scheduled");
+
+      const handleEmergencyCancel = async () => {
+        if (!confirm(
+          "Are you cancelling due to an emergency? This action cannot be undone."
+        )) {
+          return;
+        }
+
+        try {
+          await cancelAppointmentByPatient(appointment.id, true);
+          // Toast will be shown by PatientActionsCell component
+          window.location.reload();
+        } catch (error: any) {
+          // Toast will be shown by PatientActionsCell component
+          console.error("Error cancelling appointment:", error);
+        }
+      };
+
+      if (!canCancel) {
+        return null;
+      }
+
+      return (
+        <Button
+          onClick={handleEmergencyCancel}
+          className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 text-xs"
+          size="sm"
+        >
+          Emergency Cancel
+        </Button>
+      );
     },
   }
 ];

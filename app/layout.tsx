@@ -6,6 +6,7 @@ import { ThemeProvider } from "next-themes";
 import { cn } from "@/lib/utils";
 import { SmoothScrollProvider } from "@/components/providers/SmoothScrollProvider";
 import { SmoothCursor } from "@/components/ui/smooth-cursor";
+import { Toaster } from "@/components/ui/toaster";
 
 const fontSans = FontSans({
   subsets: ["latin"],
@@ -39,6 +40,7 @@ export default function RootLayout({
           <SmoothCursor />
           <ThemeProvider attribute="class" defaultTheme="dark">
             {children}
+            <Toaster />
           </ThemeProvider>
         </SmoothScrollProvider>
       </body>

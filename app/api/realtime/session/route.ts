@@ -73,7 +73,7 @@ This consultation is limited to 5 minutes. Be conversational, warm, and supporti
 
     // Return the SDP answer from OpenAI
     const answerSdp = await response.text();
-
+    
     return new NextResponse(answerSdp, {
       status: 200,
       headers: {

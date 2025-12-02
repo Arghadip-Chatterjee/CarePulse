@@ -200,6 +200,7 @@ export const updateDoctor = async (doctorId: string, data: Partial<CreateDoctorP
     });
 
     revalidatePath("/admin");
+    revalidatePath("/doctors");
     return doctor;
   } catch (error) {
     console.error("An error occurred while updating the doctor:", error);

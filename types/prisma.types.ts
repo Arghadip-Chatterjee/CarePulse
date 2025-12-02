@@ -98,6 +98,7 @@ export interface AppointmentsResponse {
   scheduledCount: number
   pendingCount: number
   cancelledCount: number
+  waitingListCount: number
   documents: AppointmentWithRelations[]
 }
 

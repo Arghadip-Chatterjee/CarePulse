@@ -312,7 +312,7 @@ export const VoiceConsultation = ({
         setStatus("generating-summary");
 
         // Request summary
-        requestSummary();
+            requestSummary();
 
         // Wait for summary with timeout
         const checkSummary = setInterval(async () => {
@@ -351,12 +351,12 @@ export const VoiceConsultation = ({
 
         if (result.success) {
             console.log("Consultation data saved successfully");
-        } else {
+                } else {
             console.error("Failed to save consultation data:", result.error);
-        }
+                }
 
         // Cleanup and complete
-        cleanup();
+            cleanup();
         onComplete(finalSummary);
     };
 

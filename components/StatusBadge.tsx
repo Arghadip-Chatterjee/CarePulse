@@ -12,6 +12,9 @@ export const StatusBadge = ({ status }: { status: Status }) => {
         "bg-red-600": status === "cancelled",
         "bg-green-500": status === "verified",
         "bg-red-800": status === "unverified",
+        "bg-yellow-600": status === "waitingList",
+        "bg-emerald-600": status === "visited",
+        "bg-orange-600": status === "notVisited",
       })}
     >
       <Image
@@ -26,9 +29,12 @@ export const StatusBadge = ({ status }: { status: Status }) => {
           "text-green-500": status === "scheduled",
           "text-blue-500": status === "pending",
           "text-red-500": status === "cancelled",
+          "text-yellow-500": status === "waitingList",
+          "text-emerald-500": status === "visited",
+          "text-orange-500": status === "notVisited",
         })}
       >
-        {status}
+        {status === "notVisited" ? "Not Visited" : status}
       </p>
     </div>
   );

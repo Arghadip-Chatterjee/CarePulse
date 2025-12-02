@@ -94,7 +94,7 @@ model Appointment {
   appointmenttype    String?
   prescription       String[]
   meeting            String?
-  hasVisited         Boolean  @default(false)
+  hasVisited         Boolean?
   
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt

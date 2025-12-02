@@ -115,4 +115,7 @@ export const StatusIcon = {
   cancelled: "/assets/icons/cancelled.svg",
   verified: "/assets/icons/verified.svg",
   unverified: "/assets/icons/cancelled.svg",
+  waitingList: "/assets/icons/pending.svg", // Using pending icon for waiting list
+  visited: "/assets/icons/check.svg", // Using check icon for visited
+  notVisited: "/assets/icons/cancelled.svg", // Using cancelled icon for not visited
 };

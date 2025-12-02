@@ -44,6 +44,7 @@ interface CustomProps {
   filterDate?: (date: Date) => boolean;
   filterTime?: (time: Date) => boolean;
   onDateChange?: (date: Date) => void;
+  minDate?: Date;
 }
 
 const RenderInput = ({ field, props }: { field: any; props: CustomProps }) => {
@@ -139,6 +140,7 @@ const RenderInput = ({ field, props }: { field: any; props: CustomProps }) => {
               wrapperClassName="date-picker"
               filterDate={props.filterDate}
               filterTime={props.filterTime}
+              minDate={props.minDate}
             />
           </FormControl>
         </div>

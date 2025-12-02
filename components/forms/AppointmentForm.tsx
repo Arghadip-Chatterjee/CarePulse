@@ -21,6 +21,7 @@ import {
 import {
   createAppointment,
   updateAppointment,
+  validateAppointmentTimeSlot,
 } from "@/lib/actions/appointment.actions";
 import { getAppointmentSchema } from "@/lib/validation";
 
@@ -30,6 +31,7 @@ import "react-datepicker/dist/react-datepicker.css";
 
 import CustomFormField, { FormFieldType } from "../CustomFormField";
 import SubmitButton from "../SubmitButton";
+import { useToast } from "@/components/hooks/use-toast";
 
 import { Form } from "../ui/form";
 
@@ -49,10 +51,19 @@ export const AppointmentForm = ({
   doctors: any; // Doctors data from the server
 }) => {
   const router = useRouter();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submissionId, setSubmissionId] = useState<string | null>(null);
   const [selectedDoctor, setSelectedDoctor] = useState<any>(null);
+  const [timeValidation, setTimeValidation] = useState<{
+    isValid: boolean;
+    message?: string;
+    isWaitingList?: boolean;
+    isBookingClosed?: boolean;
+    waitingListCount?: number;
+  }>({ isValid: true });
+  const [isValidatingTime, setIsValidatingTime] = useState(false);
 
   const AppointmentFormValidation = getAppointmentSchema(type);
 
@@ -73,9 +84,10 @@ export const AppointmentForm = ({
     },
   });
 
-  // Watch for doctor and appointment type changes
+  // Watch for doctor, appointment type, and schedule changes
   const watchedDoctor = form.watch("doctor");
   const watchedAppointmentType = form.watch("appointmenttype");
+  const watchedSchedule = form.watch("schedule");
 
   // Update selected doctor when doctor field changes
   useEffect(() => {
@@ -91,6 +103,48 @@ export const AppointmentForm = ({
       setSelectedDoctor(null);
     }
   }, [watchedDoctor, doctors]);
+
+  // Validate appointment time slot when schedule, doctor, or appointment type changes
+  useEffect(() => {
+    const validateTime = async () => {
+      if (watchedSchedule && selectedDoctor && watchedAppointmentType === "online" && type === "create") {
+        // Only validate if we have a valid date and time
+        // Check if the schedule has been properly set (not just default current time)
+        const scheduleDate = new Date(watchedSchedule);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const selectedDate = new Date(scheduleDate);
+        selectedDate.setHours(0, 0, 0, 0);
+
+        // Don't validate if date is in the past (should be handled by date picker)
+        if (selectedDate < today) {
+          setTimeValidation({ isValid: false, message: "Cannot book appointment on past dates." });
+          setIsValidatingTime(false);
+          return;
+        }
+
+        setIsValidatingTime(true);
+        try {
+          const validation = await validateAppointmentTimeSlot(
+            selectedDoctor.id,
+            watchedSchedule,
+            watchedAppointmentType
+          );
+          setTimeValidation(validation);
+        } catch (error) {
+          console.error("Error validating time slot:", error);
+          setTimeValidation({ isValid: false, message: "Error validating appointment time." });
+        } finally {
+          setIsValidatingTime(false);
+        }
+      } else {
+        setTimeValidation({ isValid: true });
+        setIsValidatingTime(false);
+      }
+    };
+
+    validateTime();
+  }, [watchedSchedule, selectedDoctor, watchedAppointmentType, type]);
 
   // Get available timings based on appointment type
   const availableTimings = useMemo(() => {
@@ -127,10 +181,22 @@ export const AppointmentForm = ({
     return null;
   };
 
-  // Filter dates - only allow days that match available timings
+  // Filter dates - only allow days that match available timings and are not in the past
   const filterDate = (date: Date) => {
+    // Disable past dates - only allow today and future dates
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selectedDate = new Date(date);
+    selectedDate.setHours(0, 0, 0, 0);
+
+    if (selectedDate < today) {
+      return false; // Disable past dates
+    }
+
+    // If no available timings, allow all future dates
     if (availableTimings.length === 0) return true;
 
+    // Only allow days that match available timings
     const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
     return availableTimings.some((timing: string) => {
       const { day } = parseTimingString(timing);
@@ -163,14 +229,26 @@ export const AppointmentForm = ({
           hours = 0;
         }
 
-        const newDate = new Date(date);
-        newDate.setHours(hours, minutes, 0, 0);
+        // Create a new date object with the selected date and doctor's start time
+        // Use local date components to avoid timezone issues
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const day = date.getDate();
+        const newDate = new Date(year, month, day, hours, minutes, 0, 0);
+
+        console.log(`📅 Date changed: Setting schedule to ${newDate.toISOString()} (${newDate.toLocaleString()}) - ${dayName} at ${availableTime}`);
         form.setValue("schedule", newDate);
       } else {
-        form.setValue("schedule", date);
+        // If time parsing fails, set date with current time (fallback)
+        const newDate = new Date(date);
+        newDate.setHours(0, 0, 0, 0);
+        form.setValue("schedule", newDate);
       }
     } else {
-      form.setValue("schedule", date);
+      // If no available time found, set date with current time (fallback)
+      const newDate = new Date(date);
+      newDate.setHours(0, 0, 0, 0);
+      form.setValue("schedule", newDate);
     }
   };
 
@@ -229,11 +307,17 @@ export const AppointmentForm = ({
 
         if (newAppointment) {
           form.reset();
+          // Check if appointment is in waiting list
+          const isWaitingList = (newAppointment as any).isWaitingList || newAppointment.status === "waitingList";
           router.push(
-            `/patients/${userId}/new-appointment/success?appointmentId=${newAppointment.id}`
+            `/patients/${userId}/new-appointment/success?appointmentId=${newAppointment.id}${isWaitingList ? "&waitingList=true" : ""}`
           );
         } else {
-          alert("Failed to create appointment. Please try again.");
+          toast({
+            title: "Booking Failed",
+            description: "Failed to create appointment. Please try again.",
+            variant: "destructive",
+          });
         }
       } else {
         const appointmentToUpdate = {
@@ -258,16 +342,36 @@ export const AppointmentForm = ({
     } catch (error: any) {
       console.error("❌ Appointment creation failed:", error);
 
-      // Provide more specific error messages
-      if (error?.message?.includes("already exists")) {
-        alert(error.message);
+      // Extract error message from the error object
+      let errorMessage = "An error occurred while creating the appointment. Please try again.";
+      let errorTitle = "Booking Failed";
+
+      if (error?.message) {
+        // Use the error message from the backend if available
+        errorMessage = error.message;
+
+        // Set appropriate title based on error type
+        if (error.message.includes("already have") || error.message.includes("already on")) {
+          errorTitle = "Appointment Conflict";
+        } else if (error.message.includes("Cannot book") || error.message.includes("Booking is closed")) {
+          errorTitle = "Booking Unavailable";
+        } else if (error.message.includes("waiting list")) {
+          errorTitle = "Waiting List";
+        }
+      } else if (error?.response?.data?.message) {
+        // Handle API response errors
+        errorMessage = error.response.data.message;
       } else if (error?.code === 409) {
-        alert("An appointment with these details already exists. Please check the date, time, doctor, or patient selection.");
-      } else if (error?.message?.includes("Document with the requested ID already exists")) {
-        alert("There was a conflict creating the appointment. Please try again.");
-      } else {
-        alert("An error occurred while creating the appointment. Please try again.");
+        errorMessage = "An appointment with these details already exists. Please check the date, time, doctor, or patient selection.";
+        errorTitle = "Appointment Conflict";
       }
+
+      // Display the error message to the user using toast
+      toast({
+        title: errorTitle,
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       // Always reset loading state
       setIsLoading(false);
@@ -394,6 +498,7 @@ export const AppointmentForm = ({
               dateFormat="MM/dd/yyyy"
               filterDate={filterDate}
               onDateChange={handleDateChange}
+              minDate={new Date()} // Disable past dates - only allow today and future dates
             />
             <div
               className={`flex flex-col gap-6  ${type === "create" && "xl:flex-row"}`}
@@ -426,6 +531,37 @@ export const AppointmentForm = ({
               <SelectItem value="online">Online</SelectItem>
               <SelectItem value="offline">Offline</SelectItem>
             </CustomFormField>
+
+            {/* Informational message for online appointments */}
+            {type === "create" && watchedAppointmentType === "online" && (
+              <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-4">
+                <div className="flex items-start gap-3">
+                  <svg
+                    className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <div>
+                    <p className="text-sm text-blue-500 font-medium mb-1">
+                      Online Appointment Booking Window
+                    </p>
+                    <p className="text-sm text-blue-400">
+                      Bookings are available only within 2 hours from the doctor's start time.
+                      If multiple patients select the same time slot, appointments will be automatically
+                      queued with 10-minute intervals to ensure smooth consultations.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
 
@@ -439,8 +575,82 @@ export const AppointmentForm = ({
           />
         )}
 
+        {/* Show waiting list message */}
+        {type === "create" && watchedAppointmentType === "online" && timeValidation.isWaitingList && (
+          <div className="rounded-lg bg-yellow-500/10 border border-yellow-500/20 p-4">
+            <div className="flex items-start gap-3">
+              <svg
+                className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+              <div>
+                <p className="text-sm text-yellow-500 font-medium mb-1">
+                  Waiting List Booking
+                </p>
+                <p className="text-sm text-yellow-400">
+                  {timeValidation.message || "Further bookings will be added to the waiting list. You will be notified when a slot becomes available."}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Show validation error message for online appointments */}
+        {type === "create" && watchedAppointmentType === "online" && !timeValidation.isValid && !timeValidation.isWaitingList && (
+          <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-4">
+            <p className="text-sm text-red-500 font-medium">
+              {timeValidation.message || "Cannot book appointment at this time."}
+            </p>
+          </div>
+        )}
+
+        {/* Show booking closed message */}
+        {type === "create" && watchedAppointmentType === "online" && timeValidation.isBookingClosed && (
+          <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-4">
+            <div className="flex items-start gap-3">
+              <svg
+                className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+              <div>
+                <p className="text-sm text-red-500 font-medium mb-1">
+                  Booking Closed
+                </p>
+                <p className="text-sm text-red-400">
+                  {timeValidation.message || "No more appointments can be booked for this time slot. The queue and waiting list are full."}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <SubmitButton
-          isLoading={isLoading}
+          isLoading={isLoading || isValidatingTime}
+          disabled={
+            isLoading ||
+            isSubmitted ||
+            isValidatingTime ||
+            (type === "create" && watchedAppointmentType === "online" && timeValidation.isBookingClosed) ||
+            (type === "create" && watchedAppointmentType === "online" && !timeValidation.isValid && !timeValidation.isWaitingList)
+          }
           className={`${type === "cancel" ? "shad-danger-btn" : "shad-primary-btn"} w-full`}
         >
           {buttonLabel}

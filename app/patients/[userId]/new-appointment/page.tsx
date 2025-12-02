@@ -8,6 +8,22 @@ import { getPatient } from "@/lib/actions/patient.actions";
 
 
 const Appointment = async ({ params: { userId } }: SearchParamProps) => {
+  // Validate userId
+  if (!userId || userId === "undefined") {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-red-500 mb-4">
+            Invalid User ID
+          </h1>
+          <p className="text-lg mb-6">
+            The user ID is missing or invalid. Please try again.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const patient = await getPatient(userId);
   const doctorData = await getVerifiedDoctors();
 
@@ -28,39 +44,41 @@ const Appointment = async ({ params: { userId } }: SearchParamProps) => {
   }
 
   return (
-    <div className="flex h-screen max-h-screen">
-      <section className="remove-scrollbar container my-auto">
-        <div className="sub-container max-w-[860px] flex-1 justify-between">
-          <Image
-            src="/assets/icons/logo-full.svg"
-            height={1000}
-            width={1000}
-            alt="logo"
-            className="mb-12 h-10 w-fit"
-          />
+    <div className="min-h-screen w-full bg-black-900">
+      <div className="container mx-auto px-4 py-8 md:px-8 lg:px-12">
+        <div className="mx-auto max-w-4xl">
+          {/* Header */}
+          <div className="mb-8 flex items-center justify-between">
+            <Image
+              src="/assets/icons/logo-full.svg"
+              height={1000}
+              width={1000}
+              alt="logo"
+              className="h-10 w-fit"
+            />
+            <Link href={`/patients/${userId}/console`}>
+              <Button variant="outline" className="text-sm">
+                Back to Console
+              </Button>
+            </Link>
+          </div>
 
-          <AppointmentForm
-            patientId={patient?.id}
-            userId={userId}
-            type="create"
-            doctors={doctorData || []}
-          />
+          {/* Form Section */}
+          <div className="rounded-lg bg-black-800 p-6 shadow-lg md:p-8 lg:p-10">
+            <AppointmentForm
+              patientId={patient?.id}
+              userId={userId}
+              type="create"
+              doctors={doctorData || []}
+            />
+          </div>
 
-          <Link href={`/patients/${userId}/console`}>
-            <Button className="mt-6">Patient Console</Button>
-          </Link>
-
-          <p className="copyright mt-10 py-12">© 2024 CarePluse</p>
+          {/* Footer */}
+          <p className="mt-8 text-center text-sm text-dark-500">
+            © 2024 CarePulse. All rights reserved.
+          </p>
         </div>
-      </section>
-
-      <Image
-        src="/assets/images/appointment-img.png"
-        height={1500}
-        width={1500}
-        alt="appointment"
-        className="side-img max-w-[390px] bg-bottom"
-      />
+      </div>
     </div>
   );
 };

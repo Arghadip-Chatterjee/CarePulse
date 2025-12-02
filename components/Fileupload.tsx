@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 
 import { FileUpload } from "@/components/ui/file-upload";
+import { useToast } from "@/components/hooks/use-toast";
 // import { revalidatePath } from "next/cache";
 
 interface FileUploadDemoProps {
@@ -9,6 +10,7 @@ interface FileUploadDemoProps {
 }
 
 export function FileUploadDemo({ userId }: FileUploadDemoProps) {
+  const { toast } = useToast();
   const [files, setFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -29,7 +31,11 @@ export function FileUploadDemo({ userId }: FileUploadDemoProps) {
         });
       }
 
-      alert("Files uploaded successfully!");
+      toast({
+        title: "Success",
+        description: "Files uploaded successfully!",
+        variant: "default",
+      });
       // revalidatePath(`/patients/${userId}/prescription`, "page"); // Ensure UI updates
 
       setIsUploading(false);

@@ -11,6 +11,7 @@ import { DataTable } from "@/components/table/DataTable";
 import { getAppointmentbyDoctorId } from "@/lib/actions/appointment.actions";
 import { getDoctor } from "@/lib/actions/doctor.actions";
 import { getPrescriptionListByUserId } from "@/lib/actions/prescription.action";
+import { DoctorDetailsCard } from "@/components/DoctorDetailsCard";
 
 const DoctorConsole = async ({ params: { userId } }: SearchParamProps) => {
   const doctor = await getDoctor(userId);
@@ -73,6 +74,9 @@ const DoctorConsole = async ({ params: { userId } }: SearchParamProps) => {
             Start the day with managing new appointments
           </p>
         </section>
+
+        {/* Doctor Details Section */}
+        <DoctorDetailsCard doctor={doctor} userId={userId} />
 
         <section className="admin-stat">
           <StatCard

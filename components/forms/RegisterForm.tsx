@@ -26,7 +26,7 @@ import CustomFormField, { FormFieldType } from "../CustomFormField";
 import { FileUploader } from "../FileUploader";
 import SubmitButton from "../SubmitButton";
 
-const RegisterForm = ({ user }: { user: User }) => {
+const RegisterForm = ({ user, userId }: { user: User; userId?: string }) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -59,8 +59,17 @@ const RegisterForm = ({ user }: { user: User }) => {
     }
 
     try {
+      // Get userId from props (route params) or user object (Prisma uses 'id', type definition uses '$id')
+      const finalUserId = userId || (user as any)?.id || (user as any)?.$id;
+      
+      if (!finalUserId) {
+        console.error("User object:", user);
+        console.error("UserId prop:", userId);
+        throw new Error("User ID is missing. Please refresh the page and try again.");
+      }
+
       const patient = {
-        userId: user.$id,
+        userId: finalUserId,
         name: values.name,
         email: values.email,
         phone: values.phone,
@@ -87,8 +96,8 @@ const RegisterForm = ({ user }: { user: User }) => {
 
       const newPatient = await registerPatient(patient);
 
-      if (newPatient) {
-        router.push(`/patients/${user.$id}/new-appointment`);
+      if (newPatient && finalUserId) {
+        router.push(`/patients/${finalUserId}/new-appointment`);
       }
     } catch (error) {
       console.log(error);

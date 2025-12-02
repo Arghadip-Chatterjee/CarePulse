@@ -6,12 +6,16 @@ import { StatCard } from "@/components/StatCard";
 import { columns1 } from "@/components/table/columns";
 import { DataTable } from "@/components/table/DataTable";
 import { Button } from "@/components/ui/button";
-import { getAppointmentListByUserId } from "@/lib/actions/appointment.actions";
+import { getAppointmentListByUserId, cancelAppointmentsExceedingTimeWindow } from "@/lib/actions/appointment.actions";
 import { getPatient } from "@/lib/actions/patient.actions";
 import { getConsultationsByUserId } from "@/lib/actions/ai.actions";
 import { AIConsultationList } from "@/components/AIConsultationList";
+import { PatientDetailsCard } from "@/components/PatientDetailsCard";
 
 const PatientConsole = async ({ params: { userId } }: SearchParamProps) => {
+  // Cancel any existing appointments that exceed the 2-hour window
+  await cancelAppointmentsExceedingTimeWindow();
+
   const patient = await getPatient(userId);
   console.log(patient);
   const appointments = await getAppointmentListByUserId(userId);
@@ -75,6 +79,9 @@ const PatientConsole = async ({ params: { userId } }: SearchParamProps) => {
           </p>
         </section>
 
+        {/* Patient Details Section */}
+        <PatientDetailsCard patient={patient} userId={userId} />
+
         <section className="admin-stat">
           <StatCard
             type="appointments"
@@ -93,6 +100,12 @@ const PatientConsole = async ({ params: { userId } }: SearchParamProps) => {
             count={appointments.cancelledCount}
             label="Cancelled appointments"
             icon={"/assets/icons/cancelled.svg"}
+          />
+          <StatCard
+            type="pending"
+            count={appointments.waitingListCount || 0}
+            label="Waiting List"
+            icon={"/assets/icons/pending.svg"}
           />
         </section>
 

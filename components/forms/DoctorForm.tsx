@@ -8,7 +8,7 @@ import { z } from "zod";
 import { Form,FormControl } from "@/components/ui/form";
 import { SelectItem } from "@/components/ui/select";
 
-import { registerDoctor } from "@/lib/actions/doctor.actions";
+import { registerDoctor, updateDoctor } from "@/lib/actions/doctor.actions";
 import { DoctorFormValidation } from "@/lib/validation";
 
 import { Specialization } from "@/types/appwrite.types";
@@ -23,26 +23,35 @@ import "react-phone-number-input/style.css";
 import SubmitButton from "../SubmitButton";
 import "react-datepicker/dist/react-datepicker.css";
 
-export const DoctorForm = ({ user }: { user: User }) => {
+export const DoctorForm = ({ 
+  user, 
+  doctor, 
+  onSuccess 
+}: { 
+  user: User;
+  doctor?: any;
+  onSuccess?: () => void;
+}) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const isEditMode = !!doctor;
 
   const form = useForm<z.infer<typeof DoctorFormValidation>>({
     resolver: zodResolver(DoctorFormValidation),
     defaultValues: {
-      name: "",
-      email: "",
-      phone: "",
-      specialization: undefined,
-      licenseNumber: "",
-      yearsOfExperience: "0",
-      hospitalAffiliation: "",
-      identificationType: undefined,
-      identificationNumber: "",
-      consultationFee: "0",
-      availableTimingsOnline: [], // Separate field for online timings
-      availableTimingsOffline: [], // Separate field for offline timings
-      isVerified: false,
+      name: doctor?.name || "",
+      email: doctor?.email || "",
+      phone: doctor?.phone || "",
+      specialization: doctor?.specialization || undefined,
+      licenseNumber: doctor?.licenseNumber || "",
+      yearsOfExperience: doctor?.yearsOfExperience || "0",
+      hospitalAffiliation: doctor?.hospitalAffiliation || "",
+      identificationType: doctor?.identificationType || undefined,
+      identificationNumber: doctor?.identificationNumber || "",
+      consultationFee: doctor?.consultationFee || "0",
+      availableTimingsOnline: doctor?.availableTimingsOnline || [],
+      availableTimingsOffline: doctor?.availableTimingsOffline || [],
+      isVerified: doctor?.isVerified || false,
     },
   });
   const onSubmit = async (values: z.infer<typeof DoctorFormValidation>) => {
@@ -63,31 +72,59 @@ export const DoctorForm = ({ user }: { user: User }) => {
     }
 
     try {
-      const doctor = {
-        userId: user.$id,
-        name: values.name,
-        email: values.email,
-        phone: values.phone,
-        specialization: values.specialization,
-        licenseNumber: values.licenseNumber,
-        yearsOfExperience: values.yearsOfExperience,
-        hospitalAffiliation: values.hospitalAffiliation,
-        identificationType: values.identificationType,
-        identificationNumber: values.identificationNumber,
-        identificationDocument: formData ?? undefined,
-        consultationFee: values.consultationFee,
-        availableTimingsOnline: values.availableTimingsOnline, // Send as string array
-        availableTimingsOffline: values.availableTimingsOffline, // Send as string array
-        isVerified: values.isVerified,
-      };
+      if (isEditMode && doctor?.id) {
+        // Update existing doctor
+        const updateData = {
+          name: values.name,
+          email: values.email,
+          phone: values.phone,
+          specialization: values.specialization,
+          licenseNumber: values.licenseNumber,
+          yearsOfExperience: values.yearsOfExperience,
+          hospitalAffiliation: values.hospitalAffiliation,
+          identificationType: values.identificationType,
+          identificationNumber: values.identificationNumber,
+          consultationFee: values.consultationFee,
+          availableTimingsOnline: values.availableTimingsOnline,
+          availableTimingsOffline: values.availableTimingsOffline,
+          isVerified: values.isVerified,
+        };
 
-      const newDoctor = await registerDoctor(doctor);
+        await updateDoctor(doctor.id, updateData);
+        
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          router.refresh();
+        }
+      } else {
+        // Create new doctor
+        const doctorData = {
+          userId: user.$id,
+          name: values.name,
+          email: values.email,
+          phone: values.phone,
+          specialization: values.specialization,
+          licenseNumber: values.licenseNumber,
+          yearsOfExperience: values.yearsOfExperience,
+          hospitalAffiliation: values.hospitalAffiliation,
+          identificationType: values.identificationType,
+          identificationNumber: values.identificationNumber,
+          identificationDocument: formData ?? undefined,
+          consultationFee: values.consultationFee,
+          availableTimingsOnline: values.availableTimingsOnline,
+          availableTimingsOffline: values.availableTimingsOffline,
+          isVerified: values.isVerified,
+        };
 
-      if (newDoctor) {
-        router.push(`/doctors/${user.$id}/console`);
+        const newDoctor = await registerDoctor(doctorData);
+
+        if (newDoctor) {
+          router.push(`/doctors/${user.$id}/console`);
+        }
       }
     } catch (error) {
-      console.error("Error registering doctor:", error);
+      console.error(`Error ${isEditMode ? 'updating' : 'registering'} doctor:`, error);
     }
 
     setIsLoading(false);
@@ -97,8 +134,10 @@ export const DoctorForm = ({ user }: { user: User }) => {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 space-y-6">
         <section className="mb-12 space-y-4">
-          <h1 className="header">Doctor Registration 🩺</h1>
-          <p className="text-dark-700">Join our medical network today.</p>
+          <h1 className="header">{isEditMode ? "Edit Doctor Details 🩺" : "Doctor Registration 🩺"}</h1>
+          <p className="text-dark-700">
+            {isEditMode ? "Update your doctor profile information." : "Join our medical network today."}
+          </p>
         </section>
 
         <CustomFormField

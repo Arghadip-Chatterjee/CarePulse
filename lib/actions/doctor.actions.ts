@@ -1,6 +1,7 @@
 "use server";
 
 import { ID, InputFile, Query } from "node-appwrite";
+import { revalidatePath } from "next/cache";
 
 import { Doctor } from "@/types/appwrite.types";
 import { CreateDoctorParams, RegisterDoctorParams } from "@/types/doctor.types";
@@ -8,6 +9,7 @@ import { parseStringify } from "../utils";
 import prisma from "@/lib/prisma";
 import { signUp } from "./auth.actions";
 import { uploadFile, fileToBase64 } from "./storage.actions";
+import { updateDoctor as updateDoctorPrisma } from "./doctor.prisma.actions";
 
 
 // CREATE APPWRITE USER FOR DOCTOR
@@ -186,6 +188,25 @@ export const getDoctorById = async (doctorId: string) => {
     } catch (error) {
         console.error("An error occurred while retrieving the doctor by ID:", error);
         return null;
+    }
+};
+
+// UPDATE DOCTOR (wrapper for prisma action)
+export const updateDoctor = async (doctorId: string, data: Partial<CreateDoctorParams>) => {
+    try {
+        const updatedDoctor = await updateDoctorPrisma(doctorId, data);
+        // Get userId from doctor to revalidate the correct path
+        const doctor = await prisma.doctor.findUnique({
+            where: { id: doctorId },
+            select: { userId: true }
+        });
+        if (doctor?.userId) {
+            revalidatePath(`/doctors/${doctor.userId}/console`);
+        }
+        return parseStringify(updatedDoctor);
+    } catch (error) {
+        console.error("An error occurred while updating the doctor:", error);
+        throw error;
     }
 };
 

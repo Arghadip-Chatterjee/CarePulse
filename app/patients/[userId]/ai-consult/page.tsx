@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/hooks/use-toast";
 import { AIConsultChat } from "@/components/AIConsultChat";
 import { VoiceConsultation } from "@/components/VoiceConsultation";
 import {
@@ -71,9 +72,15 @@ export default function AIConsultPage({ params: { userId } }: AIConsultPageProps
         );
     };
 
+    const { toast } = useToast();
+
     const handleModeSelection = () => {
         if (selectedPrescriptions.length === 0) {
-            alert("Please select at least one prescription");
+            toast({
+                title: "Selection Required",
+                description: "Please select at least one prescription",
+                variant: "destructive",
+            });
             return;
         }
         setStep("mode");
@@ -86,7 +93,11 @@ export default function AIConsultPage({ params: { userId } }: AIConsultPageProps
         const createResult = await createAIConsultation(userId, userId, selectedPrescriptions, mode);
 
         if (!createResult.success || !createResult.consultationId) {
-            alert("Failed to start consultation");
+            toast({
+                title: "Error",
+                description: "Failed to start consultation",
+                variant: "destructive",
+            });
             setIsLoading(false);
             return;
         }
@@ -103,7 +114,11 @@ export default function AIConsultPage({ params: { userId } }: AIConsultPageProps
                 setInitialMessages([{ role: "assistant", content: analyzeResult.message }]);
                 setStep("chat");
             } else {
-                alert("Failed to analyze prescriptions");
+                toast({
+                    title: "Error",
+                    description: "Failed to analyze prescriptions",
+                    variant: "destructive",
+                });
             }
         } else {
             setStep("voice");
@@ -123,7 +138,11 @@ export default function AIConsultPage({ params: { userId } }: AIConsultPageProps
         if (result.success) {
             setStep("complete");
         } else {
-            alert("Failed to save consultation summary");
+            toast({
+                title: "Error",
+                description: "Failed to save consultation summary",
+                variant: "destructive",
+            });
         }
 
         setIsLoading(false);
@@ -143,7 +162,11 @@ export default function AIConsultPage({ params: { userId } }: AIConsultPageProps
         if (result.success) {
             setStep("complete");
         } else {
-            alert("Failed to complete consultation");
+            toast({
+                title: "Error",
+                description: "Failed to complete consultation",
+                variant: "destructive",
+            });
         }
 
         setIsLoading(false);

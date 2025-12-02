@@ -10,43 +10,42 @@ const Home = ({ searchParams }: SearchParamProps) => {
   const isAdmin = searchParams?.admin === "true";
 
   return (
-    <div className="flex h-screen max-h-screen">
+    <div className="min-h-screen w-full bg-black-900">
       {isAdmin && <PasskeyModal />}
 
-      <section className="remove-scrollbar container my-auto">
-        <div className="sub-container max-w-[496px]">
+      <div className="container mx-auto px-4 py-8 md:px-8 lg:px-12">
+        <div className="mx-auto max-w-4xl">
+          {/* Header */}
+          <div className="mb-8">
           <Image
             src="/assets/icons/logo-full.svg"
             height={1000}
             width={1000}
-            alt="patient"
-            className="mb-12 h-10 w-fit"
+              alt="logo"
+              className="mb-8 h-10 w-fit"
           />
+          </div>
 
+          {/* Form Section */}
+          <div className="rounded-lg bg-black-800 p-6 shadow-lg md:p-8 lg:p-10">
           <PatientForm />
+          </div>
 
-          <div className="text-14-regular mt-20 flex justify-between">
-            <p className="justify-items-end text-dark-600 xl:text-left">
-              © 2024 CarePluse
-            </p>
-            <Link href="/doctors" className="text-green-500">
+          {/* Footer */}
+          <div className="mt-8 flex flex-wrap items-center justify-between gap-4 text-sm text-dark-500">
+            <p>© 2024 CarePulse. All rights reserved.</p>
+            <div className="flex gap-4">
+              <Link href="/doctors" className="text-green-500 hover:text-green-400 transition-colors">
               Doctor
             </Link>
-            <Link href="/admin?admin=true" className="text-green-500">
+              <Link href="/admin?admin=true" className="text-green-500 hover:text-green-400 transition-colors">
               Admin
             </Link>
+            </div>
           </div>
         </div>
-      </section>
-
-      <Image
-        src="/assets/images/onboarding-img.png"
-        height={1000}
-        width={1000}
-        alt="patient"
-        className="side-img max-w-[50%]"
-      />
-    </div>
+      </div>
+   </div>
   );
 };
 

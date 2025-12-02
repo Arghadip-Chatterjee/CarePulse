@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from "@/components/hooks/use-toast";
 
 interface Appointment {
   id: string;
@@ -28,6 +29,7 @@ export default function PrescriptionForm({
   appointments: Appointment[];
   doctor?: Doctor;
 }) {
+  const { toast } = useToast();
   const [selectedAppointmentId, setSelectedAppointmentId] = useState("");
   const [medicine, setMedicine] = useState("");
   const [dosage, setDosage] = useState("");
@@ -191,7 +193,14 @@ export default function PrescriptionForm({
   };
 
   const handleSubmit = async () => {
-    if (!selectedAppointmentId) return alert("Please select an appointment.");
+    if (!selectedAppointmentId) {
+      toast({
+        title: "Selection Required",
+        description: "Please select an appointment.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setLoading(true);
 
@@ -218,17 +227,29 @@ export default function PrescriptionForm({
       const data = await res.json();
 
       if (res.ok) {
-        alert("Prescription Uploaded ✅");
+        toast({
+          title: "Success",
+          description: "Prescription Uploaded ✅",
+          variant: "default",
+        });
         setMedicine("");
         setDosage("");
         setInstructions("");
         setSelectedAppointmentId("");
       } else {
-        alert("Upload failed ❌: " + data.error);
+        toast({
+          title: "Upload Failed",
+          description: data.error || "Upload failed ❌",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error generating prescription:", error);
-      alert("Failed to generate prescription image. Please try again.");
+      toast({
+        title: "Error",
+        description: "Failed to generate prescription image. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

@@ -163,6 +163,7 @@ export const updatePatient = async (userId: string, data: Partial<RegisterPatien
     });
 
     revalidatePath("/admin");
+    revalidatePath(`/patients/${userId}/console`);
     return patient;
   } catch (error) {
     console.error("An error occurred while updating the patient:", error);

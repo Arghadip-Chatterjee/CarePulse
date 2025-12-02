@@ -76,10 +76,8 @@ export const registerPatient = async ({
     // Extract userId - it should be in the patient object
     const userId = (patient as any).userId;
     
-    console.log("Patient data:", patient);
-    console.log("Extracted userId:", userId);
-    
     if (!userId) {
+      console.error("Patient data:", patient);
       throw new Error("userId is required to register a patient. Make sure the user is created first.");
     }
 
@@ -108,6 +106,11 @@ export const registerPatient = async ({
 // GET PATIENT
 export const getPatient = async (userId: string) => {
   try {
+    if (!userId || userId === "undefined") {
+      console.error("Invalid userId provided to getPatient:", userId);
+      return null;
+    }
+
     const patient = await prisma.patient.findFirst({
       where: { userId },
     });
@@ -118,5 +121,6 @@ export const getPatient = async (userId: string) => {
       "An error occurred while retrieving the patient details:",
       error
     );
+    return null;
   }
 };

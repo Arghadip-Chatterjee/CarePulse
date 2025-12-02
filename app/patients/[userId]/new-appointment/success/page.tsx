@@ -11,6 +11,7 @@ const RequestSuccess = async ({
   params: { userId },
 }: SearchParamProps) => {
   const appointmentId = (searchParams?.appointmentId as string) || "";
+  const isWaitingList = searchParams?.waitingList === "true";
   const appointment = await getAppointment(appointmentId);
 
   if (!appointment) {
@@ -28,9 +29,8 @@ const RequestSuccess = async ({
     );
   }
 
-  // const doctor = Doctors.find(
-  //   (doctor) => doctor.name === appointment.primaryPhysician
-  // );
+  // Check if appointment is in waiting list (from status or query param)
+  const isInWaitingList = isWaitingList || appointment.status === "waitingList";
 
   return (
     <div className=" flex h-screen max-h-screen px-[5%]">
@@ -52,11 +52,30 @@ const RequestSuccess = async ({
             width={280}
             alt="success"
           />
-          <h2 className="header mb-6 max-w-[600px] text-center">
-            Your <span className="text-green-500">appointment request</span> has
-            been successfully submitted!
-          </h2>
-          <p>We&apos;ll be in touch shortly to confirm.</p>
+          {isInWaitingList ? (
+            <>
+              <h2 className="header mb-6 max-w-[600px] text-center">
+                You have been added to the <span className="text-yellow-500">waiting list</span>!
+              </h2>
+              <p className="text-center mb-4">
+                You will be notified when a slot becomes available for your selected time.
+              </p>
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 max-w-[600px]">
+                <p className="text-yellow-400 text-sm">
+                  <strong>Note:</strong> You are on the waiting list. When an appointment is cancelled, 
+                  you will be automatically assigned to that slot and notified.
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 className="header mb-6 max-w-[600px] text-center">
+                Your <span className="text-green-500">appointment request</span> has
+                been successfully submitted!
+              </h2>
+              <p>We&apos;ll be in touch shortly to confirm.</p>
+            </>
+          )}
         </section>
 
         <section className="request-details">
