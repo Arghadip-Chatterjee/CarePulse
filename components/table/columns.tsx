@@ -34,6 +34,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 // Component for Doctor Details Cell
 const DoctorDetailsCell = ({ appointment }: { appointment: Appointment }) => {
@@ -209,12 +220,6 @@ const PatientActionsCell = ({ appointment }: { appointment: Appointment }) => {
                    (appointment.status === "pending" || appointment.status === "scheduled");
 
   const handleEmergencyCancel = async () => {
-    if (!confirm(
-      "Are you cancelling due to an emergency? This action cannot be undone."
-    )) {
-      return;
-    }
-
     try {
       await cancelAppointmentByPatient(appointment.id, true);
       toast({
@@ -237,13 +242,33 @@ const PatientActionsCell = ({ appointment }: { appointment: Appointment }) => {
   }
 
   return (
-    <Button
-      onClick={handleEmergencyCancel}
-      className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 text-xs"
-      size="sm"
-    >
-      Emergency Cancel
-    </Button>
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 text-xs"
+          size="sm"
+        >
+          Emergency Cancel
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Emergency Cancellation</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you cancelling due to an emergency? This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleEmergencyCancel}
+            className="bg-orange-600 hover:bg-orange-700"
+          >
+            Confirm Emergency Cancellation
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 };
 
@@ -451,6 +476,9 @@ export const columns1: ColumnDef<Appointment>[] = [
         </div>
       );
     },
+    filterFn: (row, id, value) => {
+      return row.getValue(id) === value;
+    },
   },
   {
     accessorKey: "schedule",
@@ -562,6 +590,7 @@ export const columns1: ColumnDef<Appointment>[] = [
     header: "Actions",
     cell: ({ row }) => {
       const appointment = row.original;
+      const { toast } = useToast();
       const scheduledTime = new Date(appointment.schedule);
       const currentTime = new Date();
       const isFutureAppointment = scheduledTime > currentTime;
@@ -569,19 +598,20 @@ export const columns1: ColumnDef<Appointment>[] = [
                        (appointment.status === "pending" || appointment.status === "scheduled");
 
       const handleEmergencyCancel = async () => {
-        if (!confirm(
-          "Are you cancelling due to an emergency? This action cannot be undone."
-        )) {
-          return;
-        }
-
         try {
           await cancelAppointmentByPatient(appointment.id, true);
-          // Toast will be shown by PatientActionsCell component
+          toast({
+            title: "Success",
+            description: "Appointment cancelled successfully due to emergency!",
+            variant: "default",
+          });
           window.location.reload();
         } catch (error: any) {
-          // Toast will be shown by PatientActionsCell component
-          console.error("Error cancelling appointment:", error);
+          toast({
+            title: "Error",
+            description: error.message || "Failed to cancel appointment. Please try again.",
+            variant: "destructive",
+          });
         }
       };
 
@@ -590,13 +620,33 @@ export const columns1: ColumnDef<Appointment>[] = [
       }
 
       return (
-        <Button
-          onClick={handleEmergencyCancel}
-          className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 text-xs"
-          size="sm"
-        >
-          Emergency Cancel
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              className="bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 text-xs"
+              size="sm"
+            >
+              Emergency Cancel
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Emergency Cancellation</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you cancelling due to an emergency? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleEmergencyCancel}
+                className="bg-orange-600 hover:bg-orange-700"
+              >
+                Confirm Emergency Cancellation
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       );
     },
   }

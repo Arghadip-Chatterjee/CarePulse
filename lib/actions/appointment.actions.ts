@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { ID, Query } from "node-appwrite";
 
-// import nodemailer from 'nodemailer';
+import nodemailer from 'nodemailer';
 
 import { Appointment } from "@/types/appwrite.types";
 
@@ -64,7 +64,7 @@ const assignWaitingListPatientToSlot = async (doctorId: string, freedSchedule: D
       console.log(`📋 Found waiting list patient: ${waitingListPatient.id} (created at: ${waitingListPatient.createdAt.toISOString()})`);
 
       // Assign this slot to the waiting list patient
-      await prisma.appointment.update({
+      const updatedAppointment = await prisma.appointment.update({
         where: { id: waitingListPatient.id },
         data: {
           status: "scheduled",
@@ -77,8 +77,8 @@ const assignWaitingListPatientToSlot = async (doctorId: string, freedSchedule: D
       console.log(`   - Original waiting list time: ${waitingListPatient.schedule.toISOString()}`);
       console.log(`   - New scheduled time: ${freedSchedule.toISOString()}`);
 
-      // TODO: Send notification to patient about slot assignment
-      // await sendSMSNotification(waitingListPatient.userId, `Your appointment has been confirmed for ${formatDateTime(freedSchedule).dateTime}`);
+      // Send email notification to patient about slot assignment
+      await sendAppointmentUpdateEmail(updatedAppointment, "waitingList");
     } else {
       console.log(`ℹ️ No waiting list patients found for doctor ${doctorId}`);
     }
@@ -506,6 +506,10 @@ export const createAppointment = async (
 
     revalidatePath("/admin");
 
+    // Send email notification
+    const emailType = newAppointment.status === "waitingList" ? "waitingList" : "created";
+    await sendAppointmentUpdateEmail(newAppointment, emailType, { queuePosition });
+
     // Return appointment with queue information if it's online
     const result = parseStringify(newAppointment);
     if (appointment.appointmenttype === "online") {
@@ -527,17 +531,17 @@ export const createAppointment = async (
   }
 };
 
-// const transporter = nodemailer.createTransport({
-//   host: process.env.NEXT_PUBLIC_SMTP_HOST!, // e.g., 'smtp.gmail.com'
-//   port: 587, // or 465 for secure
-//   secure: false, // true for 465, false for other ports
-//   auth: {
-//     user: process.env.NEXT_PUBLIC_SMTP_USER!, // your email address
-//     pass: process.env.NEXT_PUBLIC_SMTP_PASS!, // your email password or app-specific password
-//   },
-//   ignoreTLS: true,
-//   service: 'Gmail',
-// });
+const transporter = nodemailer.createTransport({
+  host: process.env.NEXT_PUBLIC_SMTP_HOST!, // e.g., 'smtp.gmail.com'
+  port: 587, // or 465 for secure
+  secure: false, // true for 465, false for other ports
+  auth: {
+    user: process.env.NEXT_PUBLIC_SMTP_USER!, // your email address
+    pass: process.env.NEXT_PUBLIC_SMTP_PASS!, // your email password or app-specific password
+  },
+  ignoreTLS: true,
+  service: 'Gmail',
+});
 
 //  GET RECENT APPOINTMENTS
 export const getRecentAppointmentList = async () => {
@@ -618,17 +622,223 @@ export const sendSMSNotification = async (userId: string, content: string) => {
 export const sendEmail = async (templateParams: any) => {
   try {
     const mailOptions = {
-      from: 'arghadipchatterjee2016@gmail.com', // sender address
+      from: process.env.NEXT_PUBLIC_SMTP_USER || 'arghadipchatterjee2016@gmail.com', // sender address
       to: templateParams.to_email, // list of receivers
       subject: templateParams.subject, // Subject line
       text: templateParams.text, // plain text body
       html: templateParams.html, // html body
     };
 
-    // const info = await transporter.sendMail(mailOptions);
-    // console.log('Email sent successfully:', info.messageId);
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent successfully:', info.messageId);
   } catch (error) {
     console.error('An error occurred while sending email:', error);
+  }
+};
+
+// Helper function to send appointment update emails
+const sendAppointmentUpdateEmail = async (
+  appointment: any,
+  updateType: 'created' | 'accepted' | 'cancelled' | 'visited' | 'notVisited' | 'waitingList',
+  additionalInfo?: { queuePosition?: number; cancellationReason?: string }
+) => {
+  try {
+    // Fetch patient and doctor details
+    const appointmentWithDetails = await prisma.appointment.findUnique({
+      where: { id: appointment.id },
+      include: {
+        patient: true,
+        doctor: true,
+      },
+    });
+
+    if (!appointmentWithDetails || !appointmentWithDetails.patient) {
+      console.error('Appointment or patient not found for email notification');
+      return;
+    }
+
+    const patient = appointmentWithDetails.patient;
+    const doctor = appointmentWithDetails.doctor;
+    const scheduleDate = formatDateTime(appointmentWithDetails.schedule);
+    const appointmentId = appointmentWithDetails.id;
+
+    let subject = '';
+    let html = '';
+    let text = '';
+
+    switch (updateType) {
+      case 'created':
+        if (appointmentWithDetails.status === 'waitingList') {
+          subject = 'CarePulse - Added to Waiting List';
+          html = `
+            <h1>Appointment Waiting List</h1>
+            <h3>Appointment ID: ${appointmentId}</h3>
+            <p>Dear ${patient.name},</p>
+            <p>Your appointment request with Dr. ${doctor?.name || 'Doctor'} has been added to the waiting list.</p>
+            <p><strong>Appointment Details:</strong></p>
+            <ul>
+              <li>Date & Time: ${scheduleDate.dateTime}</li>
+              <li>Doctor: ${doctor?.name || 'Not Assigned'}</li>
+              <li>Type: ${appointmentWithDetails.appointmenttype}</li>
+              <li>Reason: ${appointmentWithDetails.reason}</li>
+            </ul>
+            <p>You will be notified when a slot becomes available.</p>
+            <p>Thank you for choosing CarePulse!</p>
+            <hr/>
+            <p><strong>Team CarePulse</strong></p>
+          `;
+          text = `Your appointment with Dr. ${doctor?.name || 'Doctor'} has been added to the waiting list. Appointment ID: ${appointmentId}. Date: ${scheduleDate.dateTime}`;
+        } else {
+          subject = 'CarePulse - Appointment Created';
+          const queueInfo = additionalInfo?.queuePosition
+            ? `<p><strong>Queue Position:</strong> ${additionalInfo.queuePosition === 1 ? 'You are first in the queue' : `You are #${additionalInfo.queuePosition} in the queue`}</p>`
+            : '';
+          html = `
+            <h1>Appointment Created</h1>
+            <h3>Appointment ID: ${appointmentId}</h3>
+            <p>Dear ${patient.name},</p>
+            <p>Your appointment has been successfully created!</p>
+            <p><strong>Appointment Details:</strong></p>
+            <ul>
+              <li>Date & Time: ${scheduleDate.dateTime}</li>
+              <li>Doctor: ${doctor?.name || 'Not Assigned'}</li>
+              <li>Type: ${appointmentWithDetails.appointmenttype}</li>
+              <li>Reason: ${appointmentWithDetails.reason}</li>
+              <li>Status: ${appointmentWithDetails.status}</li>
+            </ul>
+            ${queueInfo}
+            <p>Please visit the doctor at the scheduled time and manage your prescriptions from the portal.</p>
+            <p>Thank you for choosing CarePulse!</p>
+            <hr/>
+            <p><strong>Team CarePulse</strong></p>
+          `;
+          text = `Your appointment has been created. Appointment ID: ${appointmentId}. Date: ${scheduleDate.dateTime}. Doctor: ${doctor?.name || 'Not Assigned'}`;
+        }
+        break;
+
+      case 'accepted':
+        subject = 'CarePulse - Appointment Confirmed';
+        html = `
+          <h1>Appointment Confirmed</h1>
+          <h3>Appointment ID: ${appointmentId}</h3>
+          <p>Dear ${patient.name},</p>
+          <p>Your appointment has been confirmed!</p>
+          <p><strong>Appointment Details:</strong></p>
+          <ul>
+            <li>Date & Time: ${scheduleDate.dateTime}</li>
+            <li>Doctor: ${doctor?.name || 'Not Assigned'}</li>
+            <li>Type: ${appointmentWithDetails.appointmenttype}</li>
+            <li>Reason: ${appointmentWithDetails.reason}</li>
+            <li>Status: Scheduled</li>
+          </ul>
+          <p>Please visit the doctor at the scheduled time and manage your prescriptions from the portal.</p>
+          <p>Thank you for choosing CarePulse!</p>
+          <hr/>
+          <p><strong>Team CarePulse</strong></p>
+        `;
+        text = `Your appointment has been confirmed. Appointment ID: ${appointmentId}. Date: ${scheduleDate.dateTime}. Doctor: ${doctor?.name || 'Not Assigned'}`;
+        break;
+
+      case 'cancelled':
+        subject = 'CarePulse - Appointment Cancelled';
+        const cancellationReason = additionalInfo?.cancellationReason || appointmentWithDetails.cancellationReason || 'Cancelled';
+        html = `
+          <h1>Appointment Cancelled</h1>
+          <h3>Appointment ID: ${appointmentId}</h3>
+          <p>Dear ${patient.name},</p>
+          <p>We regret to inform you that your appointment has been cancelled.</p>
+          <p><strong>Appointment Details:</strong></p>
+          <ul>
+            <li>Date & Time: ${scheduleDate.dateTime}</li>
+            <li>Doctor: ${doctor?.name || 'Not Assigned'}</li>
+            <li>Type: ${appointmentWithDetails.appointmenttype}</li>
+            <li>Reason: ${appointmentWithDetails.reason}</li>
+            <li>Cancellation Reason: ${cancellationReason}</li>
+          </ul>
+          <p>Please rebook your appointment if needed and manage your prescriptions from the portal.</p>
+          <p>Thank you for choosing CarePulse!</p>
+          <hr/>
+          <p><strong>Team CarePulse</strong></p>
+        `;
+        text = `Your appointment has been cancelled. Appointment ID: ${appointmentId}. Date: ${scheduleDate.dateTime}. Reason: ${cancellationReason}`;
+        break;
+
+      case 'visited':
+        subject = 'CarePulse - Visit Confirmed';
+        html = `
+          <h1>Visit Confirmed</h1>
+          <h3>Appointment ID: ${appointmentId}</h3>
+          <p>Dear ${patient.name},</p>
+          <p>Your visit has been confirmed by the doctor.</p>
+          <p><strong>Appointment Details:</strong></p>
+          <ul>
+            <li>Date & Time: ${scheduleDate.dateTime}</li>
+            <li>Doctor: ${doctor?.name || 'Not Assigned'}</li>
+            <li>Type: ${appointmentWithDetails.appointmenttype}</li>
+            <li>Status: Visited</li>
+          </ul>
+          <p>You can now book another appointment if needed.</p>
+          <p>Thank you for choosing CarePulse!</p>
+          <hr/>
+          <p><strong>Team CarePulse</strong></p>
+        `;
+        text = `Your visit has been confirmed. Appointment ID: ${appointmentId}. Date: ${scheduleDate.dateTime}`;
+        break;
+
+      case 'notVisited':
+        subject = 'CarePulse - Visit Status Updated';
+        html = `
+          <h1>Visit Status Updated</h1>
+          <h3>Appointment ID: ${appointmentId}</h3>
+          <p>Dear ${patient.name},</p>
+          <p>Your appointment status has been updated to "Not Visited".</p>
+          <p><strong>Appointment Details:</strong></p>
+          <ul>
+            <li>Date & Time: ${scheduleDate.dateTime}</li>
+            <li>Doctor: ${doctor?.name || 'Not Assigned'}</li>
+            <li>Type: ${appointmentWithDetails.appointmenttype}</li>
+            <li>Status: Not Visited</li>
+          </ul>
+          <p>If you have any concerns, please contact us.</p>
+          <p>Thank you for choosing CarePulse!</p>
+          <hr/>
+          <p><strong>Team CarePulse</strong></p>
+        `;
+        text = `Your appointment status has been updated to "Not Visited". Appointment ID: ${appointmentId}. Date: ${scheduleDate.dateTime}`;
+        break;
+
+      case 'waitingList':
+        subject = 'CarePulse - Moved from Waiting List';
+        html = `
+          <h1>Appointment Confirmed from Waiting List</h1>
+          <h3>Appointment ID: ${appointmentId}</h3>
+          <p>Dear ${patient.name},</p>
+          <p>Great news! A slot has become available and your appointment has been confirmed!</p>
+          <p><strong>Appointment Details:</strong></p>
+          <ul>
+            <li>Date & Time: ${scheduleDate.dateTime}</li>
+            <li>Doctor: ${doctor?.name || 'Not Assigned'}</li>
+            <li>Type: ${appointmentWithDetails.appointmenttype}</li>
+            <li>Status: Scheduled</li>
+          </ul>
+          <p>Please visit the doctor at the scheduled time.</p>
+          <p>Thank you for choosing CarePulse!</p>
+          <hr/>
+          <p><strong>Team CarePulse</strong></p>
+        `;
+        text = `Your appointment from waiting list has been confirmed. Appointment ID: ${appointmentId}. Date: ${scheduleDate.dateTime}`;
+        break;
+    }
+
+    await sendEmail({
+      to_email: patient.email,
+      subject,
+      text,
+      html,
+    });
+  } catch (error) {
+    console.error('Error sending appointment update email:', error);
+    // Don't throw error - email failure shouldn't break the appointment update
   }
 };
 
@@ -801,12 +1011,17 @@ export const acceptAppointment = async (appointmentId: string) => {
   revalidatePath("/admin", "page");
   console.log("accept appointment", appointmentId);
 
-  return await prisma.appointment.update({
+  const updatedAppointment = await prisma.appointment.update({
     where: { id: appointmentId },
     data: {
       status: "scheduled",
     },
   });
+
+  // Send email notification
+  await sendAppointmentUpdateEmail(updatedAppointment, "accepted");
+
+  return updatedAppointment;
 };
 
 export const cancelAppointment = async (appointmentId: string, cancellationReason?: string) => {
@@ -829,6 +1044,11 @@ export const cancelAppointment = async (appointmentId: string, cancellationReaso
       status: "cancelled",
       cancellationReason: cancellationReason || "Cancelled by admin",
     },
+  });
+
+  // Send email notification
+  await sendAppointmentUpdateEmail(updatedAppointment, "cancelled", {
+    cancellationReason: cancellationReason || "Cancelled by admin",
   });
 
   // If this was an online appointment, check for waiting list patients to assign
@@ -879,6 +1099,11 @@ export const cancelAppointmentByPatient = async (appointmentId: string, isEmerge
         status: "cancelled",
         cancellationReason,
       },
+    });
+
+    // Send email notification
+    await sendAppointmentUpdateEmail(updatedAppointment, "cancelled", {
+      cancellationReason,
     });
 
     // If this was an online appointment, check for waiting list patients to assign
@@ -949,6 +1174,13 @@ export const updateAppointmentVisitedStatus = async (
     });
 
     if (!updatedAppointment) throw Error;
+
+    // Send email notification if status changed to visited or notVisited
+    if (newStatus === "visited") {
+      await sendAppointmentUpdateEmail(updatedAppointment, "visited");
+    } else if (newStatus === "notVisited") {
+      await sendAppointmentUpdateEmail(updatedAppointment, "notVisited");
+    }
 
     // Revalidate all relevant paths
     revalidatePath("/admin");
