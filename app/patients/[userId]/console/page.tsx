@@ -11,8 +11,22 @@ import { getPatient } from "@/lib/actions/patient.actions";
 import { getConsultationsByUserId } from "@/lib/actions/ai.actions";
 import { AIConsultationList } from "@/components/AIConsultationList";
 import { PatientDetailsCard } from "@/components/PatientDetailsCard";
+import { auth } from "@/lib/auth.config";
+import { redirect } from "next/navigation";
 
 const PatientConsole = async ({ params: { userId } }: SearchParamProps) => {
+  // Check authentication
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect("/home");
+  }
+
+  // Verify the userId matches the authenticated user
+  if (session.user.id !== userId) {
+    redirect(`/patients/${session.user.id}/console`);
+  }
+
   // Cancel any existing appointments that exceed the 2-hour window
   await cancelAppointmentsExceedingTimeWindow();
 

@@ -73,7 +73,7 @@ export const AppointmentForm = ({
       doctor: appointment?.doctor || "",
       schedule: appointment
         ? new Date(appointment?.schedule!)
-        : new Date(Date.now()),
+        : (null as unknown as Date),
       reason: appointment ? appointment.reason : "",
       note: appointment?.note || "",
       cancellationReason: appointment?.cancellationReason || "",

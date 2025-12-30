@@ -35,18 +35,24 @@ export const PasskeyModal = () => {
   useEffect(() => {
     const accessKey = encryptedKey && decryptKey(encryptedKey);
 
-    if (path)
+    if (path) {
+      // Check if we're on the admin page
+      const isAdminPage = path === "/admin";
+
       if (accessKey === process.env.NEXT_PUBLIC_ADMIN_PASSKEY!.toString()) {
         setOpen(false);
-        router.push("/admin");
-      } else {
+        if (!isAdminPage) {
+          router.push("/admin");
+        }
+      } else if (isAdminPage) {
         setOpen(true);
       }
-  }, [encryptedKey]);
+    }
+  }, [encryptedKey, path]);
 
   const closeModal = () => {
     setOpen(false);
-    router.push("/");
+    router.push("/home");
   };
 
   const validatePasskey = (

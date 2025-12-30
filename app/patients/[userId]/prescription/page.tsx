@@ -9,10 +9,24 @@ import { Button } from "@/components/ui/button";
 
 import { getPatient } from "@/lib/actions/patient.actions";
 import { getPrescriptionListByUserId } from "@/lib/actions/prescription.action";
+import { auth } from "@/lib/auth.config";
+import { redirect } from "next/navigation";
 
 const PrescriptionConsole = async ({
   params: { userId },
 }: SearchParamProps) => {
+  // Check authentication
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect("/home");
+  }
+
+  // Verify the userId matches the authenticated user
+  if (session.user.id !== userId) {
+    redirect(`/patients/${session.user.id}/prescription`);
+  }
+
   const patient = await getPatient(userId);
   console.log(patient);
 

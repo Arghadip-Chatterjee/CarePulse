@@ -5,9 +5,21 @@ import { AppointmentForm } from "@/components/forms/AppointmentForm";
 import { Button } from "@/components/ui/button";
 import { getVerifiedDoctors } from "@/lib/actions/doctor.actions";
 import { getPatient } from "@/lib/actions/patient.actions";
-
-
+import { auth } from "@/lib/auth.config";
+import { redirect } from "next/navigation";
 const Appointment = async ({ params: { userId } }: SearchParamProps) => {
+  // Check authentication
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect("/home");
+  }
+
+  // Verify the userId matches the authenticated user
+  if (session.user.id !== userId) {
+    redirect(`/patients/${session.user.id}/new-appointment`);
+  }
+
   // Validate userId
   if (!userId || userId === "undefined") {
     return (

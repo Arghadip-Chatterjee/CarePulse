@@ -14,10 +14,12 @@ import "react-phone-number-input/style.css";
 import CustomFormField, { FormFieldType } from "../CustomFormField";
 import SubmitButton from "../SubmitButton";
 import { IconLock, IconShieldLock } from "@tabler/icons-react";
+import { ForgotPasswordModal } from "../ForgotPasswordModal";
 
 export const PatientForm = () => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   const form = useForm<z.infer<typeof UserFormValidation>>({
     resolver: zodResolver(UserFormValidation),
@@ -44,14 +46,31 @@ export const PatientForm = () => {
       const newUser = await createUser(user);
 
       if (newUser) {
+        // After creating/finding user, sign them in with NextAuth
+        const { signIn } = await import("next-auth/react");
+        const result = await signIn("credentials", {
+          email: values.email,
+          password: values.password,
+          redirect: false,
+        });
+
+        if (result?.error) {
+          console.error("Login failed:", result.error);
+          alert("Login failed. Please check your credentials.");
+          setIsLoading(false);
+          return;
+        }
+
+        // After successful login, redirect based on patient status
         if (newUser.patient) {
-          router.push(`/patients/${newUser.id}/new-appointment`);
+          router.push(`/patients/${newUser.id}/console`);
         } else {
           router.push(`/patients/${newUser.id}/register`);
         }
       }
     } catch (error) {
       console.log(error);
+      alert("An error occurred. Please try again.");
     }
 
     setIsLoading(false);
@@ -115,8 +134,23 @@ export const PatientForm = () => {
           iconComponent={<IconShieldLock className="size-5 text-dark-600" />}
         />
 
+        <div className="text-right">
+          <button
+            type="button"
+            onClick={() => setShowForgotPassword(true)}
+            className="text-sm text-green-500 hover:text-green-400 transition-colors"
+          >
+            Forgot Password?
+          </button>
+        </div>
+
         <SubmitButton isLoading={isLoading}>Get Started</SubmitButton>
       </form>
+
+      <ForgotPasswordModal
+        isOpen={showForgotPassword}
+        onClose={() => setShowForgotPassword(false)}
+      />
     </Form>
   );
 };

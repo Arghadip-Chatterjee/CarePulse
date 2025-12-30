@@ -407,7 +407,7 @@ const checkForConflictingAppointments = async (appointment: CreateAppointmentPar
       // For online appointments, we allow multiple patients but will adjust the schedule
       // No doctor conflict checking needed - queue system handles it
       console.log("Online appointment - queue system will handle scheduling");
-      return { hasConflict: false };
+    return { hasConflict: false };
     } else {
       // For offline appointments, NO doctor conflict checking
       // Multiple patients can book the same doctor at the same time for offline appointments
@@ -481,11 +481,11 @@ export const createAppointment = async (
       }
     } else {
       // For offline appointments, check conflicts using the original schedule
-      const conflictCheck = await checkForConflictingAppointments(appointment);
-      if (conflictCheck.hasConflict) {
-        throw new Error(conflictCheck.message);
+  const conflictCheck = await checkForConflictingAppointments(appointment);
+  if (conflictCheck.hasConflict) {
+    throw new Error(conflictCheck.message);
       }
-    }
+  }
 
     const newAppointment = await prisma.appointment.create({
       data: {
@@ -1318,15 +1318,11 @@ export const validateAppointmentTimeSlot = async (
       // For subsequent users, it will be +10 minutes from the previous user (handled by queue calculation)
       // So we need to check if the selected time is at or after doctor's start time and within the 2-hour window
 
-      // If selected time is before doctor's start time, it's invalid
+      // If selected time is before doctor's start time, we allow it because the queue system
+      // will automatically assign the correct time starting from doctor's start time.
+      // We only care that it's the correct day.
       if (selectedTime.getTime() < doctorStartTime.getTime()) {
-        console.log(`   - ❌ Selected time (${selectedTime.toISOString()}) is before doctor's start time (${doctorStartTime.toISOString()})`);
-        return {
-          isValid: false,
-          message: `Cannot book appointment. Appointment time must be at or after doctor's start time of ${doctorStartTime.toLocaleTimeString()}.`,
-          maxTime: twoHoursAfterStart,
-          isBookingClosed: false,
-        };
+        console.log(`   - ℹ️ Selected time (${selectedTime.toISOString()}) is before doctor's start time (${doctorStartTime.toISOString()}). Proceeding as queue will adjust it.`);
       }
 
       // Check if selected time exceeds the 2-hour window

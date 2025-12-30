@@ -31,7 +31,7 @@ export const createDoctor = async (doctor: CreateDoctorParams) => {
             name: doctor.name,
             email: doctor.email,
             phone: doctor.phone,
-            password: doctor.phone, // Using phone as default password
+            password: (doctor as any).password || doctor.phone, // Use provided password or fallback to phone
             role: "doctor",
         });
 

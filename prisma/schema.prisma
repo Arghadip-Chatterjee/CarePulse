@@ -16,6 +16,8 @@ model User {
   role          String    @default("patient") // "patient", "doctor", "admin"
   emailVerified DateTime?
   image         String?
+  resetToken       String?
+  resetTokenExpiry DateTime?
   
   patient       Patient?
   doctor        Doctor?

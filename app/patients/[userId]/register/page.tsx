@@ -31,13 +31,13 @@ const Register = async ({ params: { userId } }: SearchParamProps) => {
         <div className="mx-auto max-w-4xl">
           {/* Header */}
           <div className="mb-8">
-            <Image
-              src="/assets/icons/logo-full.svg"
-              height={1000}
-              width={1000}
+          <Image
+            src="/assets/icons/logo-full.svg"
+            height={1000}
+            width={1000}
               alt="logo"
               className="mb-8 h-10 w-fit"
-            />
+          />
           </div>
 
           {/* Form Section */}

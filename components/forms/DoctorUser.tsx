@@ -14,10 +14,12 @@ import { UserFormValidation } from "@/lib/validation";
 import "react-phone-number-input/style.css";
 import CustomFormField, { FormFieldType } from "../CustomFormField";
 import SubmitButton from "../SubmitButton";
+import { ForgotPasswordModal } from "../ForgotPasswordModal";
 
 export const DoctorUserForm = () => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   const form = useForm<z.infer<typeof UserFormValidation>>({
     resolver: zodResolver(UserFormValidation),
@@ -44,6 +46,22 @@ export const DoctorUserForm = () => {
       const newUser = await createDoctor(user);
 
       if (newUser) {
+        // After creating/finding user, sign them in with NextAuth
+        const { signIn } = await import("next-auth/react");
+        const result = await signIn("credentials", {
+          email: values.email,
+          password: values.password,
+          redirect: false,
+        });
+
+        if (result?.error) {
+          console.error("Login failed:", result.error);
+          alert("Login failed. Please check your credentials.");
+          setIsLoading(false);
+          return;
+        }
+
+        // After successful login, redirect based on doctor status
         if (newUser.doctor) {
           router.push(`/doctors/${newUser.id}/console`);
         } else {
@@ -52,6 +70,7 @@ export const DoctorUserForm = () => {
       }
     } catch (error) {
       console.log(error);
+      alert("An error occurred. Please try again.");
     }
 
     setIsLoading(false);
@@ -111,8 +130,23 @@ export const DoctorUserForm = () => {
           iconComponent={<Lock className="h-6 w-6 text-dark-600" />}
         />
 
+        <div className="text-right">
+          <button
+            type="button"
+            onClick={() => setShowForgotPassword(true)}
+            className="text-sm text-green-500 hover:text-green-400 transition-colors"
+          >
+            Forgot Password?
+          </button>
+        </div>
+
         <SubmitButton isLoading={isLoading}>Get Started</SubmitButton>
       </form>
+
+      <ForgotPasswordModal
+        isOpen={showForgotPassword}
+        onClose={() => setShowForgotPassword(false)}
+      />
     </Form>
   );
 };

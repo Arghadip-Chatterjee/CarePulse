@@ -12,8 +12,22 @@ import { getAppointmentbyDoctorId } from "@/lib/actions/appointment.actions";
 import { getDoctor } from "@/lib/actions/doctor.actions";
 import { getPrescriptionListByUserId } from "@/lib/actions/prescription.action";
 import { DoctorDetailsCard } from "@/components/DoctorDetailsCard";
+import { auth } from "@/lib/auth.config";
+import { redirect } from "next/navigation";
 
 const DoctorConsole = async ({ params: { userId } }: SearchParamProps) => {
+  // Check authentication
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect("/home");
+  }
+
+  // Verify the userId matches the authenticated user
+  if (session.user.id !== userId) {
+    redirect(`/doctors/${session.user.id}/console`);
+  }
+
   const doctor = await getDoctor(userId);
 
   revalidatePath(`/doctors/${userId}/console`);

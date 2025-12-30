@@ -17,18 +17,18 @@ const Home = ({ searchParams }: SearchParamProps) => {
         <div className="mx-auto max-w-4xl">
           {/* Header */}
           <div className="mb-8">
-          <Image
-            src="/assets/icons/logo-full.svg"
-            height={1000}
-            width={1000}
+            <Image
+              src="/assets/icons/logo-full.svg"
+              height={1000}
+              width={1000}
               alt="logo"
               className="mb-8 h-10 w-fit"
-          />
+            />
           </div>
 
           {/* Form Section */}
           <div className="rounded-lg bg-black-800 p-6 shadow-lg md:p-8 lg:p-10">
-          <PatientForm />
+            <PatientForm />
           </div>
 
           {/* Footer */}
@@ -36,16 +36,16 @@ const Home = ({ searchParams }: SearchParamProps) => {
             <p>© 2024 CarePulse. All rights reserved.</p>
             <div className="flex gap-4">
               <Link href="/doctors" className="text-green-500 hover:text-green-400 transition-colors">
-              Doctor
-            </Link>
-              <Link href="/admin?admin=true" className="text-green-500 hover:text-green-400 transition-colors">
-              Admin
-            </Link>
+                Doctor
+              </Link>
+              <Link href="/admin" className="text-green-500 hover:text-green-400 transition-colors">
+                Admin
+              </Link>
             </div>
           </div>
         </div>
       </div>
-   </div>
+    </div>
   );
 };
 

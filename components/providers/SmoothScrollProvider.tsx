@@ -2,12 +2,18 @@
 
 import { useEffect } from "react";
 import Lenis from "lenis";
+import { usePathname } from "next/navigation";
 
 // Global Lenis instance
 let lenisInstance: Lenis | null = null;
 
 export function SmoothScrollProvider({ children }: { children: React.ReactNode }) {
+    const pathname = usePathname();
+
     useEffect(() => {
+        // Only initialize smooth scroll on the landing page
+        if (pathname !== "/") return;
+
         // Initialize Lenis with slower, smoother settings
         const lenis = new Lenis({
             duration: 2.0, // Increased for slower, smoother scrolling (gives animations time)
@@ -36,7 +42,7 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
             lenis.destroy();
             lenisInstance = null;
         };
-    }, []);
+    }, [pathname]);
 
     return <>{children}</>;
 }
