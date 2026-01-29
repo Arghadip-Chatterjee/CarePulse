@@ -2,6 +2,8 @@
 
 Carepulse is a modern, full-stack medical appointment management system built to streamline patient-doctor interactions. Patients can schedule, manage, and cancel appointments, while doctors can access and update schedules in real-time. Also, Prescription Storage is Available along with Online Meetings
 
+Also AI Prescription analysis can be done and AI based consulation on the Prescription and Symptoms can be done 
+
 ---
 
 ## LIVE LINK - https://care-pulse-two-bice.vercel.app/ 
@@ -14,11 +16,14 @@ Carepulse is a modern, full-stack medical appointment management system built to
 
 ### 👨‍⚕️ For Patients
 - Book appointments with doctors based on specialization
-- Select preferred time slots
+- Select preferred time slots in Online and Offline both
 - View appointment history
 - Cancel appointments with reason
-- Receive real-time success notifications via toast, SMS, email
+- Receive real-time success notifications via toast, email
 - Schedule Online Meetings and Online Prescription will be given
+- Queue System in Appointment Booking
+- Prescription Storage and AI analysis of those Prescription
+- AI based consulting keeping the Prescription context after analysing 
 
 ### 🩻 For Doctors
 - View upcoming appointments
@@ -30,7 +35,7 @@ Carepulse is a modern, full-stack medical appointment management system built to
 - Reusable UI components (Buttons, Selects, Form Fields)
 - Responsive design with Tailwind CSS and Shadcn UI
 - Success pages after actions (e.g., appointment creation)
-- Toast notifications (customizable with dynamic text) and SMS and Email
+- Toast notifications (customizable with dynamic text) and Email
 
 ### 🛠️ Admin Panel
 - Full control over users (patients & doctors)
@@ -48,7 +53,7 @@ Carepulse is a modern, full-stack medical appointment management system built to
 | **Next.js 14**| React framework with App Router    |
 | **TypeScript**| Strong typing for safer code       |
 | **Tailwind CSS**| Utility-first styling framework |
-| **Appwrite**  | Backend as a Service (Auth, DB, etc.) |
+| **MongoDB with Prisma**  | Backend as an ORM (Auth, DB, etc.) |
 | **Zod**       | Schema validation for forms        |
 | **React Hook Form** | Modern form management   |
 | **ShadCN/UI** | Beautiful, accessible UI components |
